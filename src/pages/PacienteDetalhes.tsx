@@ -5,20 +5,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Edit, Mail, Phone, MapPin, AlertCircle } from "lucide-react";
+import { ArrowLeft, Edit, Mail, Phone, AlertCircle, MessageCircle, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditarPacienteModal } from "@/components/modals/EditarPacienteModal";
+import { AdicionarPlanoModal } from "@/components/modals/AdicionarPlanoModal";
 import { useState } from "react";
 
 export default function PacienteDetalhes() {
   const { id } = useParams();
   const { user } = useAuth();
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
+  const [modalAdicionarPlanoOpen, setModalAdicionarPlanoOpen] = useState(false);
 
   const pacienteId = parseInt(id || "0");
+
+  const formatarTelefone = (telefone: string) => {
+    const numeros = telefone.replace(/\D/g, '');
+    if (numeros.length === 11) {
+      return `+55 (${numeros.slice(0, 2)}) ${numeros.slice(2, 3)} ${numeros.slice(3, 7)}-${numeros.slice(7)}`;
+    }
+    if (numeros.length === 10) {
+      return `+55 (${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
+    }
+    return telefone;
+  };
+
+  const getTelefoneWhatsApp = (telefone: string) => {
+    return telefone.replace(/\D/g, '');
+  };
 
   const { data: paciente, isLoading } = useQuery({
     queryKey: ["paciente", pacienteId, user?.id],
@@ -101,9 +118,23 @@ export default function PacienteDetalhes() {
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="flex items-center gap-3">
             <Phone className="h-4 w-4 text-muted-foreground" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-muted-foreground">Telefone</p>
-              <p className="font-medium">{paciente.telefone || "Não informado"}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium">
+                  {paciente.telefone ? formatarTelefone(paciente.telefone) : "Não informado"}
+                </p>
+                {paciente.telefone && (
+                  <a
+                    href={`https://wa.me/${getTelefoneWhatsApp(paciente.telefone)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -111,13 +142,6 @@ export default function PacienteDetalhes() {
             <div>
               <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-medium">{paciente.email || "Não informado"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 md:col-span-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-sm text-muted-foreground">Endereço</p>
-              <p className="font-medium">{paciente.endereco || "Não informado"}</p>
             </div>
           </div>
         </CardContent>
@@ -149,13 +173,22 @@ export default function PacienteDetalhes() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-4">
+              <div className="text-center py-4 space-y-3">
                 <Badge variant="outline" className="text-base">
                   Cliente Avulso
                 </Badge>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-muted-foreground">
                   Paciente sem plano de fidelização
                 </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModalAdicionarPlanoOpen(true)}
+                  className="mt-2"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Plano
+                </Button>
               </div>
             )}
           </CardContent>
@@ -166,7 +199,7 @@ export default function PacienteDetalhes() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5" />
-              Restrições e Objetivos
+              Restrições do Paciente
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -180,6 +213,7 @@ export default function PacienteDetalhes() {
           </CardContent>
         </Card>
       </div>
+
 
       {/* Histórico de Consultas */}
       <Card>
@@ -222,11 +256,18 @@ export default function PacienteDetalhes() {
       </Card>
 
       {paciente && (
-        <EditarPacienteModal
-          open={modalEditarOpen}
-          onOpenChange={setModalEditarOpen}
-          paciente={paciente}
-        />
+        <>
+          <EditarPacienteModal
+            open={modalEditarOpen}
+            onOpenChange={setModalEditarOpen}
+            paciente={paciente}
+          />
+          <AdicionarPlanoModal
+            open={modalAdicionarPlanoOpen}
+            onOpenChange={setModalAdicionarPlanoOpen}
+            paciente={paciente}
+          />
+        </>
       )}
     </div>
   );

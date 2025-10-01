@@ -4,21 +4,35 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Plus, Clock } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
+import { Calendar as CalendarIcon, Plus, Clock, CheckCircle, MoreVertical } from "lucide-react";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, startOfDay, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EfetivarConsultaModal } from "@/components/modals/EfetivarConsultaModal";
+import { NovaConsultaModal } from "@/components/modals/NovaConsultaModal";
+import { EditarObservacoesModal } from "@/components/modals/EditarObservacoesModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Agenda() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [consultaSelecionada, setConsultaSelecionada] = useState<any>(null);
   const [modalEfetivarOpen, setModalEfetivarOpen] = useState(false);
+  const [modalNovaConsultaOpen, setModalNovaConsultaOpen] = useState(false);
+  const [modalEditarObservacoesOpen, setModalEditarObservacoesOpen] = useState(false);
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Calcular o primeiro dia da semana do mês e adicionar dias vazios no início
+  const firstDayOfMonth = getDay(monthStart); // 0 = Domingo, 1 = Segunda, etc.
+  const emptyDays = Array(firstDayOfMonth).fill(null);
 
   const { data: consultas } = useQuery({
     queryKey: ["consultas-mes", selectedDate, user?.id],
@@ -91,7 +105,7 @@ export default function Agenda() {
             Gerencie seus agendamentos e disponibilidade
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setModalNovaConsultaOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Consulta
         </Button>
@@ -138,6 +152,9 @@ export default function Agenda() {
                   {day}
                 </div>
               ))}
+              {emptyDays.map((_, index) => (
+                <div key={`empty-${index}`} className="aspect-square" />
+              ))}
               {daysInMonth.map((day) => (
                 <button
                   key={day.toISOString()}
@@ -171,36 +188,71 @@ export default function Agenda() {
           <CardContent>
             {consultasDoDia && consultasDoDia.length > 0 ? (
               <div className="space-y-3">
-                {consultasDoDia.map((consulta) => (
-                  <div
-                    key={consulta.id}
-                    className="p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setConsultaSelecionada(consulta);
-                      setModalEfetivarOpen(true);
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">
-                        {format(parseISO(consulta.data_agendamento), "HH:mm")}
-                      </span>
-                      <Badge variant={getStatusBadge(consulta.status || "pendente")} className="text-xs">
-                        {consulta.status}
-                      </Badge>
-                    </div>
-                    <Link
-                      to={`/pacientes/${consulta.paciente_id}`}
-                      className="text-sm text-primary hover:underline block mb-1"
+                {consultasDoDia.map((consulta) => {
+                  const isConcluida = consulta.status === "concluída";
+                  return (
+                    <div
+                      key={consulta.id}
+                      className={`p-3 rounded-lg border bg-card transition-colors ${
+                        isConcluida ? "opacity-60" : ""
+                      }`}
                     >
-                      {consulta.pacientes?.nome}
-                    </Link>
-                    {consulta.tipo_consulta && (
-                      <p className="text-xs text-muted-foreground">
-                        {consulta.tipo_consulta}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm">
+                          {format(parseISO(consulta.data_agendamento), "HH:mm")}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getStatusBadge(consulta.status || "pendente")} className="text-xs">
+                            {consulta.status}
+                          </Badge>
+                          {!isConcluida ? (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setConsultaSelecionada(consulta);
+                                setModalEfetivarOpen(true);
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-7 w-7">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setConsultaSelecionada(consulta);
+                                    setModalEditarObservacoesOpen(true);
+                                  }}
+                                >
+                                  Editar Observações
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </div>
+                      <Link
+                        to={`/pacientes/${consulta.paciente_id}`}
+                        className="text-sm text-primary hover:underline block mb-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {consulta.pacientes?.nome}
+                      </Link>
+                      {consulta.tipo_consulta && (
+                        <p className="text-xs text-muted-foreground">
+                          {consulta.tipo_consulta}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
@@ -211,13 +263,25 @@ export default function Agenda() {
         </Card>
       </div>
 
-      {/* Modal de Efetivação */}
+      {/* Modais */}
+      <NovaConsultaModal
+        open={modalNovaConsultaOpen}
+        onOpenChange={setModalNovaConsultaOpen}
+      />
+      
       {consultaSelecionada && (
-        <EfetivarConsultaModal
-          open={modalEfetivarOpen}
-          onOpenChange={setModalEfetivarOpen}
-          consulta={consultaSelecionada}
-        />
+        <>
+          <EfetivarConsultaModal
+            open={modalEfetivarOpen}
+            onOpenChange={setModalEfetivarOpen}
+            consulta={consultaSelecionada}
+          />
+          <EditarObservacoesModal
+            open={modalEditarObservacoesOpen}
+            onOpenChange={setModalEditarObservacoesOpen}
+            consulta={consultaSelecionada}
+          />
+        </>
       )}
 
       {/* Bloqueios */}
