@@ -17,30 +17,34 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
   // Buscar receitas e despesas do mês
   const { data: transactions } = useQuery({
-    queryKey: ["transactions", firstDayOfMonth, lastDayOfMonth],
+    queryKey: ["transactions", firstDayOfMonth, lastDayOfMonth, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fluxo_de_caixa")
         .select("*")
+        .eq("user_id", user?.id)
         .gte("data", firstDayOfMonth.toISOString())
         .lte("data", lastDayOfMonth.toISOString());
       
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id,
   });
 
   // Buscar consultas do dia
   const { data: todayAppointments } = useQuery({
-    queryKey: ["today-appointments", today],
+    queryKey: ["today-appointments", today, user?.id],
     queryFn: async () => {
       const startOfDay = new Date(today.setHours(0, 0, 0, 0));
       const endOfDay = new Date(today.setHours(23, 59, 59, 999));
@@ -51,6 +55,7 @@ export default function Dashboard() {
           *,
           pacientes (nome)
         `)
+        .eq("user_id", user?.id)
         .gte("data_agendamento", startOfDay.toISOString())
         .lte("data_agendamento", endOfDay.toISOString())
         .order("data_agendamento", { ascending: true });
@@ -58,35 +63,40 @@ export default function Dashboard() {
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id,
   });
 
   // Buscar novos pacientes do mês
   const { data: newPatients } = useQuery({
-    queryKey: ["new-patients", firstDayOfMonth],
+    queryKey: ["new-patients", firstDayOfMonth, user?.id],
     queryFn: async () => {
       const { count, error } = await supabase
         .from("pacientes")
         .select("*", { count: "exact", head: true })
+        .eq("user_id", user?.id)
         .gte("data_cadastro", firstDayOfMonth.toISOString());
       
       if (error) throw error;
       return count || 0;
     },
+    enabled: !!user?.id,
   });
 
   // Buscar consultas concluídas do mês
   const { data: completedAppointments } = useQuery({
-    queryKey: ["completed-appointments", firstDayOfMonth],
+    queryKey: ["completed-appointments", firstDayOfMonth, user?.id],
     queryFn: async () => {
       const { count, error } = await supabase
         .from("consultas")
         .select("*", { count: "exact", head: true })
+        .eq("user_id", user?.id)
         .eq("status", "concluída")
         .gte("data_agendamento", firstDayOfMonth.toISOString());
       
       if (error) throw error;
       return count || 0;
     },
+    enabled: !!user?.id,
   });
 
   // Calcular KPIs financeiros

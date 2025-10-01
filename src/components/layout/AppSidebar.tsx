@@ -7,6 +7,7 @@ import {
   FileText,
   Settings,
   Activity,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -18,7 +19,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -30,6 +35,8 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const { user, signOut } = useAuth();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -65,6 +72,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className="p-4 space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">{user?.user_metadata?.full_name || "Usuário"}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+          </div>
+          <Separator />
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={signOut}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

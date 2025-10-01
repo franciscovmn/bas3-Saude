@@ -9,14 +9,16 @@ import { ArrowLeft, Edit, Mail, Phone, MapPin, AlertCircle } from "lucide-react"
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PacienteDetalhes() {
   const { id } = useParams();
+  const { user } = useAuth();
 
   const pacienteId = parseInt(id || "0");
 
   const { data: paciente, isLoading } = useQuery({
-    queryKey: ["paciente", pacienteId],
+    queryKey: ["paciente", pacienteId, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pacientes")
@@ -25,25 +27,29 @@ export default function PacienteDetalhes() {
           planos_fidelizacao (*)
         `)
         .eq("id", pacienteId)
+        .eq("user_id", user?.id)
         .single();
 
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id && !!pacienteId,
   });
 
   const { data: consultas } = useQuery({
-    queryKey: ["paciente-consultas", pacienteId],
+    queryKey: ["paciente-consultas", pacienteId, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("consultas")
         .select("*")
         .eq("paciente_id", pacienteId)
+        .eq("user_id", user?.id)
         .order("data_agendamento", { ascending: false });
 
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id && !!pacienteId,
   });
 
   if (isLoading) {

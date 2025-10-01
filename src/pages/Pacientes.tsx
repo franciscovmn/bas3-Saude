@@ -14,13 +14,15 @@ import {
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Pacientes() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const { data: pacientes, isLoading } = useQuery({
-    queryKey: ["pacientes", statusFilter],
+    queryKey: ["pacientes", statusFilter, user?.id],
     queryFn: async () => {
       let query = supabase
         .from("pacientes")
@@ -28,6 +30,7 @@ export default function Pacientes() {
           *,
           planos_fidelizacao (nome_plano)
         `)
+        .eq("user_id", user?.id)
         .order("data_cadastro", { ascending: false });
 
       if (statusFilter) {
@@ -38,6 +41,7 @@ export default function Pacientes() {
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id,
   });
 
   const filteredPacientes = pacientes?.filter((p) =>
