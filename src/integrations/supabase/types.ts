@@ -21,6 +21,7 @@ export type Database = {
           dia_inteiro: boolean | null
           id: number
           motivo: string | null
+          user_id: string | null
         }
         Insert: {
           data_fim: string
@@ -28,6 +29,7 @@ export type Database = {
           dia_inteiro?: boolean | null
           id?: number
           motivo?: string | null
+          user_id?: string | null
         }
         Update: {
           data_fim?: string
@@ -35,6 +37,7 @@ export type Database = {
           dia_inteiro?: boolean | null
           id?: number
           motivo?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -66,6 +69,7 @@ export type Database = {
           resultado: string | null
           status: string | null
           tipo_consulta: string | null
+          user_id: string | null
         }
         Insert: {
           data_agendamento: string
@@ -79,6 +83,7 @@ export type Database = {
           resultado?: string | null
           status?: string | null
           tipo_consulta?: string | null
+          user_id?: string | null
         }
         Update: {
           data_agendamento?: string
@@ -92,6 +97,7 @@ export type Database = {
           resultado?: string | null
           status?: string | null
           tipo_consulta?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -118,6 +124,7 @@ export type Database = {
           id: number
           intervalo_fim: string | null
           intervalo_inicio: string | null
+          user_id: string | null
         }
         Insert: {
           dia_semana: number
@@ -126,6 +133,7 @@ export type Database = {
           id?: number
           intervalo_fim?: string | null
           intervalo_inicio?: string | null
+          user_id?: string | null
         }
         Update: {
           dia_semana?: number
@@ -134,6 +142,7 @@ export type Database = {
           id?: number
           intervalo_fim?: string | null
           intervalo_inicio?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -144,6 +153,7 @@ export type Database = {
           descricao: string | null
           id: number
           tipo_transacao: string | null
+          user_id: string | null
           valor: number | null
         }
         Insert: {
@@ -152,6 +162,7 @@ export type Database = {
           descricao?: string | null
           id?: number
           tipo_transacao?: string | null
+          user_id?: string | null
           valor?: number | null
         }
         Update: {
@@ -160,6 +171,7 @@ export type Database = {
           descricao?: string | null
           id?: number
           tipo_transacao?: string | null
+          user_id?: string | null
           valor?: number | null
         }
         Relationships: []
@@ -174,6 +186,7 @@ export type Database = {
           paciente_id: number | null
           resultado: string | null
           status: string | null
+          user_id: string | null
         }
         Insert: {
           consulta_id?: number | null
@@ -184,6 +197,7 @@ export type Database = {
           paciente_id?: number | null
           resultado?: string | null
           status?: string | null
+          user_id?: string | null
         }
         Update: {
           consulta_id?: number | null
@@ -194,6 +208,7 @@ export type Database = {
           paciente_id?: number | null
           resultado?: string | null
           status?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -287,6 +302,7 @@ export type Database = {
           restricoes: string | null
           status: string | null
           telefone: string | null
+          user_id: string | null
         }
         Insert: {
           data_cadastro?: string | null
@@ -299,6 +315,7 @@ export type Database = {
           restricoes?: string | null
           status?: string | null
           telefone?: string | null
+          user_id?: string | null
         }
         Update: {
           data_cadastro?: string | null
@@ -311,6 +328,7 @@ export type Database = {
           restricoes?: string | null
           status?: string | null
           telefone?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -358,6 +376,51 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -366,6 +429,10 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       halfvec_avg: {
         Args: { "": number[] }
@@ -466,7 +533,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "professional"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -593,6 +660,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "professional"],
+    },
   },
 } as const
