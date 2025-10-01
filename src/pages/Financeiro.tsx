@@ -24,11 +24,14 @@ import { DollarSign, TrendingDown, Wallet, TrendingUp, Plus } from "lucide-react
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
+import { NovaTransacaoModal } from "@/components/modals/NovaTransacaoModal";
 
 export default function Financeiro() {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [modalReceitaOpen, setModalReceitaOpen] = useState(false);
+  const [modalDespesaOpen, setModalDespesaOpen] = useState(false);
 
   const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1);
   const lastDayOfMonth = new Date(selectedYear, selectedMonth + 1, 0);
@@ -78,11 +81,11 @@ export default function Financeiro() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button>
+          <Button onClick={() => setModalReceitaOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Receita
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setModalDespesaOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Despesa
           </Button>
@@ -195,6 +198,9 @@ export default function Financeiro() {
           </Table>
         </CardContent>
       </Card>
+
+      <NovaTransacaoModal open={modalReceitaOpen} onOpenChange={setModalReceitaOpen} tipo="receita" />
+      <NovaTransacaoModal open={modalDespesaOpen} onOpenChange={setModalDespesaOpen} tipo="despesa" />
     </div>
   );
 }

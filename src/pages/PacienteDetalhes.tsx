@@ -10,10 +10,13 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+import { EditarPacienteModal } from "@/components/modals/EditarPacienteModal";
+import { useState } from "react";
 
 export default function PacienteDetalhes() {
   const { id } = useParams();
   const { user } = useAuth();
+  const [modalEditarOpen, setModalEditarOpen] = useState(false);
 
   const pacienteId = parseInt(id || "0");
 
@@ -84,7 +87,7 @@ export default function PacienteDetalhes() {
           <h1 className="text-3xl font-bold tracking-tight">{paciente.nome}</h1>
           <p className="text-muted-foreground">Ficha do Paciente</p>
         </div>
-        <Button>
+        <Button onClick={() => setModalEditarOpen(true)}>
           <Edit className="h-4 w-4 mr-2" />
           Editar Cadastro
         </Button>
@@ -217,6 +220,14 @@ export default function PacienteDetalhes() {
           )}
         </CardContent>
       </Card>
+
+      {paciente && (
+        <EditarPacienteModal
+          open={modalEditarOpen}
+          onOpenChange={setModalEditarOpen}
+          paciente={paciente}
+        />
+      )}
     </div>
   );
 }

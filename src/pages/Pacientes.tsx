@@ -15,11 +15,13 @@ import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { NovoPacienteModal } from "@/components/modals/NovoPacienteModal";
 
 export default function Pacientes() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [modalNovoOpen, setModalNovoOpen] = useState(false);
 
   const { data: pacientes, isLoading } = useQuery({
     queryKey: ["pacientes", statusFilter, user?.id],
@@ -66,7 +68,7 @@ export default function Pacientes() {
             Gerencie todos os pacientes do consultório
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setModalNovoOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Paciente
         </Button>
@@ -163,6 +165,8 @@ export default function Pacientes() {
           </TableBody>
         </Table>
       </div>
+
+      <NovoPacienteModal open={modalNovoOpen} onOpenChange={setModalNovoOpen} />
     </div>
   );
 }

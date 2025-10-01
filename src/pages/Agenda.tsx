@@ -9,10 +9,13 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseIS
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { EfetivarConsultaModal } from "@/components/modals/EfetivarConsultaModal";
 
 export default function Agenda() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [consultaSelecionada, setConsultaSelecionada] = useState<any>(null);
+  const [modalEfetivarOpen, setModalEfetivarOpen] = useState(false);
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -171,7 +174,11 @@ export default function Agenda() {
                 {consultasDoDia.map((consulta) => (
                   <div
                     key={consulta.id}
-                    className="p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                    className="p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setConsultaSelecionada(consulta);
+                      setModalEfetivarOpen(true);
+                    }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-sm">
@@ -203,6 +210,15 @@ export default function Agenda() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Efetivação */}
+      {consultaSelecionada && (
+        <EfetivarConsultaModal
+          open={modalEfetivarOpen}
+          onOpenChange={setModalEfetivarOpen}
+          consulta={consultaSelecionada}
+        />
+      )}
 
       {/* Bloqueios */}
       {bloqueios && bloqueios.length > 0 && (
