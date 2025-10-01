@@ -139,9 +139,14 @@ export default function PacienteDetalhes() {
           </div>
           <div className="flex items-center gap-3">
             <Mail className="h-4 w-4 text-muted-foreground" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-medium">{paciente.email || "Não informado"}</p>
+              {!paciente.email && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  O email não foi informado, indicando que as consultas são presenciais.
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -208,6 +213,22 @@ export default function PacienteDetalhes() {
             ) : (
               <p className="text-sm text-muted-foreground">
                 Nenhuma restrição registrada
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Widget de Objetivo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Objetivo Principal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(paciente as any).objetivo ? (
+              <p className="text-sm leading-relaxed">{(paciente as any).objetivo}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Nenhum objetivo definido
               </p>
             )}
           </CardContent>

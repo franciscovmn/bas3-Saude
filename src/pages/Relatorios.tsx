@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -20,16 +21,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FileText, Filter } from "lucide-react";
+import { FileText, Filter, TrendingUp, Award, BarChart } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { VerObservacoesModal } from "@/components/modals/VerObservacoesModal";
 
 export default function Relatorios() {
   const { user } = useAuth();
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+  const [observacoesModal, setObservacoesModal] = useState<{
+    open: boolean;
+    observacoes: string;
+    pacienteNome: string;
+  }>({ open: false, observacoes: "", pacienteNome: "" });
 
   const { data: consultas } = useQuery({
     queryKey: ["relatorio-consultas", dataInicio, dataFim, user?.id],
@@ -57,6 +64,88 @@ export default function Relatorios() {
     },
     enabled: !!user?.id,
   });
+
+  const { data: todosPlanos } = useQuery({
+    queryKey: ["todos-planos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("planos_fidelizacao")
+        .select("*");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: todosPacientes } = useQuery({
+    queryKey: ["todos-pacientes-relatorio", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pacientes")
+        .select("id, status, plano_fidelizacao_id")
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: todasConsultasConcluidas } = useQuery({
+    queryKey: ["todas-consultas-concluidas", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("consultas")
+        .select("id, paciente_id")
+        .eq("user_id", user?.id)
+        .eq("status", "concluída");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Métricas
+  const pacientesComVinculo = todosPacientes?.filter(p => p.status === "com vinculo").length || 0;
+  const pacientesSemVinculo = todosPacientes?.filter(p => p.status === "sem vinculo").length || 0;
+  const totalPacientesAtivos = pacientesComVinculo + pacientesSemVinculo;
+  const taxaFidelizacao = totalPacientesAtivos > 0 
+    ? (pacientesComVinculo / totalPacientesAtivos) * 100 
+    : 0;
+
+  // Plano mais popular
+  const contagemPlanos = todosPacientes?.reduce((acc, p) => {
+    if (p.plano_fidelizacao_id) {
+      acc[p.plano_fidelizacao_id] = (acc[p.plano_fidelizacao_id] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<number, number>);
+
+  const planoMaisPopularId = contagemPlanos 
+    ? Object.entries(contagemPlanos).sort((a, b) => b[1] - a[1])[0]?.[0]
+    : null;
+
+  const planoMaisPopular = planoMaisPopularId 
+    ? todosPlanos?.find(p => p.id === parseInt(planoMaisPopularId))
+    : null;
+
+  // Média de consultas por paciente fidelizado
+  const consultasPorPaciente = todasConsultasConcluidas?.reduce((acc, c) => {
+    acc[c.paciente_id] = (acc[c.paciente_id] || 0) + 1;
+    return acc;
+  }, {} as Record<number, number>);
+
+  const pacientesFidelizadosIds = todosPacientes
+    ?.filter(p => p.status === "com vinculo")
+    .map(p => p.id) || [];
+
+  const consultasPacientesFidelizados = pacientesFidelizadosIds
+    .map(id => consultasPorPaciente?.[id] || 0);
+
+  const mediaConsultasFidelizados = consultasPacientesFidelizados.length > 0
+    ? consultasPacientesFidelizados.reduce((a, b) => a + b, 0) / consultasPacientesFidelizados.length
+    : 0;
 
   const getStatusBadge = (status: string): "default" | "secondary" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -122,42 +211,59 @@ export default function Relatorios() {
         </CardContent>
       </Card>
 
-      {/* Estatísticas */}
+      {/* Métricas */}
       <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Taxa de Fidelização
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-3xl font-bold">{taxaFidelizacao.toFixed(1)}%</div>
+            <div className="space-y-2">
+              <Progress value={taxaFidelizacao} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {pacientesComVinculo} de {totalPacientesAtivos} pacientes ativos
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Consultas
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Plano Mais Popular
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{consultas?.length || 0}</div>
+            <div className="text-2xl font-bold">
+              {planoMaisPopular?.nome_plano || "N/A"}
+            </div>
+            {planoMaisPopularId && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {contagemPlanos?.[parseInt(planoMaisPopularId)]} pacientes
+              </p>
+            )}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pacientes Únicos
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <BarChart className="h-4 w-4" />
+              Média de Consultas (Fidelizados)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {new Set(consultas?.map(c => c.paciente_id)).size || 0}
+              {mediaConsultasFidelizados.toFixed(1)}
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Período Analisado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm">
-              {dataInicio && dataFim
-                ? `${format(new Date(dataInicio), "dd/MM/yyyy")} - ${format(new Date(dataFim), "dd/MM/yyyy")}`
-                : "Todas as consultas"}
-            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              consultas por paciente
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -218,10 +324,34 @@ export default function Relatorios() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {consulta.pacientes?.planos_fidelizacao?.nome_plano || "Avulso"}
+                      {consulta.pacientes?.planos_fidelizacao?.nome_plano || "Consulta Avulsa"}
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {consulta.observacoes || "-"}
+                    <TableCell className="max-w-xs">
+                      {consulta.observacoes ? (
+                        <div className="flex items-center gap-2">
+                          <span className="truncate flex-1">
+                            {consulta.observacoes.length > 50
+                              ? `${consulta.observacoes.substring(0, 50)}...`
+                              : consulta.observacoes}
+                          </span>
+                          {consulta.observacoes.length > 50 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setObservacoesModal({
+                                open: true,
+                                observacoes: consulta.observacoes,
+                                pacienteNome: consulta.pacientes?.nome || "Paciente"
+                              })}
+                              className="text-xs"
+                            >
+                              Ver mais
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        "-"
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -236,6 +366,13 @@ export default function Relatorios() {
           </Table>
         </CardContent>
       </Card>
+
+      <VerObservacoesModal
+        open={observacoesModal.open}
+        onOpenChange={(open) => setObservacoesModal({ ...observacoesModal, open })}
+        observacoes={observacoesModal.observacoes}
+        pacienteNome={observacoesModal.pacienteNome}
+      />
     </div>
   );
 }

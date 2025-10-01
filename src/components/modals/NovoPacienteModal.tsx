@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface NovoPacienteModalProps {
   open: boolean;
@@ -28,18 +35,42 @@ export function NovoPacienteModal({ open, onOpenChange }: NovoPacienteModalProps
     telefone: "",
     email: "",
     restricoes: "",
+    objetivo: "",
+    plano_fidelizacao_id: "",
+  });
+
+  const { data: planos } = useQuery({
+    queryKey: ["planos-fidelizacao"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("planos_fidelizacao")
+        .select("*")
+        .order("nome_plano");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
   });
 
   const criarPacienteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("pacientes").insert({
+      const pacienteData: any = {
         user_id: user?.id,
         nome: formData.nome,
         telefone: formData.telefone,
         email: formData.email,
         restricoes: formData.restricoes,
+        objetivo: formData.objetivo,
         status: "paciente novo",
-      });
+      };
+
+      if (formData.plano_fidelizacao_id) {
+        pacienteData.plano_fidelizacao_id = parseInt(formData.plano_fidelizacao_id);
+        pacienteData.status = "com vinculo";
+      }
+
+      const { error } = await supabase.from("pacientes").insert(pacienteData);
 
       if (error) throw error;
     },
@@ -47,7 +78,7 @@ export function NovoPacienteModal({ open, onOpenChange }: NovoPacienteModalProps
       toast.success("Paciente cadastrado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
       onOpenChange(false);
-      setFormData({ nome: "", telefone: "", email: "", restricoes: "" });
+      setFormData({ nome: "", telefone: "", email: "", restricoes: "", objetivo: "", plano_fidelizacao_id: "" });
     },
     onError: (error) => {
       console.error("Erro ao criar paciente:", error);
@@ -105,14 +136,45 @@ export function NovoPacienteModal({ open, onOpenChange }: NovoPacienteModalProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="restricoes">Observações / Restrições</Label>
+            <Label htmlFor="restricoes">Restrições</Label>
             <Textarea
               id="restricoes"
               value={formData.restricoes}
               onChange={(e) => setFormData({ ...formData, restricoes: e.target.value })}
-              placeholder="Anote informações importantes sobre o paciente..."
-              rows={3}
+              placeholder="Alergias, restrições alimentares, etc..."
+              rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="objetivo">Objetivo Principal</Label>
+            <Textarea
+              id="objetivo"
+              value={formData.objetivo}
+              onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
+              placeholder="Qual o objetivo do paciente?"
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="plano">Plano de Fidelização (opcional)</Label>
+            <Select
+              value={formData.plano_fidelizacao_id}
+              onValueChange={(value) => setFormData({ ...formData, plano_fidelizacao_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um plano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                {planos?.map((plano) => (
+                  <SelectItem key={plano.id} value={plano.id.toString()}>
+                    {plano.nome_plano}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>

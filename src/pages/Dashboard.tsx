@@ -18,10 +18,13 @@ import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, parseISO } from
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { EfetivarConsultaModal } from "@/components/modals/EfetivarConsultaModal";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [valoresVisiveis, setValoresVisiveis] = useState(true);
+  const [consultaSelecionada, setConsultaSelecionada] = useState<any>(null);
+  const [modalEfetivarOpen, setModalEfetivarOpen] = useState(false);
   
   const hoje = new Date();
   const inicioMes = startOfMonth(hoje);
@@ -148,7 +151,17 @@ export default function Dashboard() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setValoresVisiveis(!valoresVisiveis)}
+              className="h-8 w-8"
+            >
+              {valoresVisiveis ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Button>
+          </div>
           <p className="text-muted-foreground">
             Bem-vindo ao seu painel de gestão
           </p>
@@ -157,52 +170,22 @@ export default function Dashboard() {
 
       {/* KPIs Financeiros */}
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-10 h-8 w-8"
-            onClick={() => setValoresVisiveis(!valoresVisiveis)}
-          >
-            {valoresVisiveis ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
-          <KPICard
-            title="Receitas"
-            value={valoresVisiveis ? `R$ ${totalReceitas.toFixed(2)}` : "R$ --,--"}
-            icon={DollarSign}
-          />
-        </div>
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-10 h-8 w-8"
-            onClick={() => setValoresVisiveis(!valoresVisiveis)}
-          >
-            {valoresVisiveis ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
-          <KPICard
-            title="Despesas"
-            value={valoresVisiveis ? `R$ ${totalDespesas.toFixed(2)}` : "R$ --,--"}
-            icon={TrendingUp}
-          />
-        </div>
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-10 h-8 w-8"
-            onClick={() => setValoresVisiveis(!valoresVisiveis)}
-          >
-            {valoresVisiveis ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
-          <KPICard
-            title="Saldo"
-            value={valoresVisiveis ? `R$ ${saldo.toFixed(2)}` : "R$ --,--"}
-            icon={DollarSign}
-            variant={saldo >= 0 ? "success" : "destructive"}
-          />
-        </div>
+        <KPICard
+          title="Receitas"
+          value={valoresVisiveis ? `R$ ${totalReceitas.toFixed(2)}` : "R$ --,--"}
+          icon={DollarSign}
+        />
+        <KPICard
+          title="Despesas"
+          value={valoresVisiveis ? `R$ ${totalDespesas.toFixed(2)}` : "R$ --,--"}
+          icon={TrendingUp}
+        />
+        <KPICard
+          title="Saldo"
+          value={valoresVisiveis ? `R$ ${saldo.toFixed(2)}` : "R$ --,--"}
+          icon={DollarSign}
+          variant={saldo >= 0 ? "success" : "destructive"}
+        />
       </div>
 
       {/* Resumo do Mês */}
@@ -236,17 +219,18 @@ export default function Dashboard() {
           {consultasHoje && consultasHoje.length > 0 ? (
             <div className="space-y-3">
               {consultasHoje.map((consulta) => (
-                <div
+                <button
                   key={consulta.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
+                  onClick={() => {
+                    setConsultaSelecionada(consulta);
+                    setModalEfetivarOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
                 >
                   <div>
-                    <Link
-                      to={`/pacientes/${consulta.paciente_id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
+                    <p className="font-medium text-primary">
                       {consulta.pacientes?.nome}
-                    </Link>
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {format(parseISO(consulta.data_agendamento), "HH:mm")}
                       {consulta.tipo_consulta && ` - ${consulta.tipo_consulta}`}
@@ -255,7 +239,7 @@ export default function Dashboard() {
                   <Badge variant={getStatusBadge(consulta.status || "pendente")}>
                     {consulta.status}
                   </Badge>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -265,6 +249,14 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {consultaSelecionada && (
+        <EfetivarConsultaModal
+          open={modalEfetivarOpen}
+          onOpenChange={setModalEfetivarOpen}
+          consulta={consultaSelecionada}
+        />
+      )}
     </div>
   );
 }

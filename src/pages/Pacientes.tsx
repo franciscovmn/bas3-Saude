@@ -93,25 +93,25 @@ export default function Pacientes() {
             Todos
           </Button>
           <Button
-            variant={statusFilter === "novo" ? "default" : "outline"}
+            variant={statusFilter === "paciente novo" ? "default" : "outline"}
             size="sm"
-            onClick={() => setStatusFilter("novo")}
+            onClick={() => setStatusFilter("paciente novo")}
           >
-            Novos
+            Novo
           </Button>
           <Button
-            variant={statusFilter === "ativo" ? "default" : "outline"}
+            variant={statusFilter === "com vinculo" ? "default" : "outline"}
             size="sm"
-            onClick={() => setStatusFilter("ativo")}
+            onClick={() => setStatusFilter("com vinculo")}
           >
-            Ativos
+            Com Vínculo
           </Button>
           <Button
-            variant={statusFilter === "inativo" ? "default" : "outline"}
+            variant={statusFilter === "sem vinculo" ? "default" : "outline"}
             size="sm"
-            onClick={() => setStatusFilter("inativo")}
+            onClick={() => setStatusFilter("sem vinculo")}
           >
-            Inativos
+            Sem Vínculo
           </Button>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function Pacientes() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {paciente.planos_fidelizacao?.nome_plano || "Cliente Avulso"}
+                    {paciente.planos_fidelizacao?.nome_plano || "A se definir"}
                   </TableCell>
                 </TableRow>
               ))

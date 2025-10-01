@@ -27,6 +27,7 @@ export function EditarPacienteModal({ open, onOpenChange, paciente }: EditarPaci
     telefone: "",
     email: "",
     restricoes: "",
+    objetivo: "",
   });
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function EditarPacienteModal({ open, onOpenChange, paciente }: EditarPaci
         telefone: paciente.telefone || "",
         email: paciente.email || "",
         restricoes: paciente.restricoes || "",
+        objetivo: paciente.objetivo || "",
       });
     }
   }, [paciente]);
@@ -49,6 +51,7 @@ export function EditarPacienteModal({ open, onOpenChange, paciente }: EditarPaci
           telefone: formData.telefone,
           email: formData.email,
           restricoes: formData.restricoes,
+          objetivo: formData.objetivo,
         })
         .eq("id", paciente.id);
 
@@ -116,13 +119,24 @@ export function EditarPacienteModal({ open, onOpenChange, paciente }: EditarPaci
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="restricoes">Observações / Restrições</Label>
+            <Label htmlFor="restricoes">Restrições</Label>
             <Textarea
               id="restricoes"
               value={formData.restricoes}
               onChange={(e) => setFormData({ ...formData, restricoes: e.target.value })}
-              placeholder="Anote informações importantes sobre o paciente..."
-              rows={3}
+              placeholder="Alergias, restrições alimentares, etc..."
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="objetivo">Objetivo Principal</Label>
+            <Textarea
+              id="objetivo"
+              value={formData.objetivo}
+              onChange={(e) => setFormData({ ...formData, objetivo: e.target.value })}
+              placeholder="Qual o objetivo do paciente?"
+              rows={2}
             />
           </div>
 
