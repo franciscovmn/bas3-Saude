@@ -13,6 +13,7 @@ import PacienteDetalhes from "./pages/PacienteDetalhes";
 import Financeiro from "./pages/Financeiro";
 import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
+import Assistente from "./pages/Assistente";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
                       <Route path="/pacientes/:id" element={<PacienteDetalhes />} />
                       <Route path="/financeiro" element={<Financeiro />} />
                       <Route path="/relatorios" element={<Relatorios />} />
+                      <Route path="/assistente" element={<Assistente />} />
                       <Route path="/configuracoes" element={<Configuracoes />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

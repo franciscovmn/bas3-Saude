@@ -13,18 +13,22 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Edit2,
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EfetivarConsultaModal } from "@/components/modals/EfetivarConsultaModal";
+import { EditarObservacoesModal } from "@/components/modals/EditarObservacoesModal";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [valoresVisiveis, setValoresVisiveis] = useState(true);
   const [consultaSelecionada, setConsultaSelecionada] = useState<any>(null);
   const [modalEfetivarOpen, setModalEfetivarOpen] = useState(false);
+  const [modalEditarObsOpen, setModalEditarObsOpen] = useState(false);
+  const [periodoFiltro, setPeriodoFiltro] = useState<"hoje" | "semana" | "mes">("hoje");
   
   const hoje = new Date();
   const inicioMes = startOfMonth(hoje);
@@ -48,12 +52,22 @@ export default function Dashboard() {
     enabled: !!user?.id,
   });
 
-  // Consultas de hoje
-  const { data: consultasHoje } = useQuery({
-    queryKey: ["consultas-hoje", user?.id],
+  // Consultas filtradas por período
+  const { data: consultasFiltradas } = useQuery({
+    queryKey: ["consultas-periodo", periodoFiltro, user?.id],
     queryFn: async () => {
-      const inicioDia = startOfDay(hoje);
-      const fimDia = endOfDay(hoje);
+      let inicio, fim;
+      
+      if (periodoFiltro === "hoje") {
+        inicio = startOfDay(hoje);
+        fim = endOfDay(hoje);
+      } else if (periodoFiltro === "semana") {
+        inicio = startOfWeek(hoje, { locale: ptBR });
+        fim = endOfWeek(hoje, { locale: ptBR });
+      } else {
+        inicio = inicioMes;
+        fim = fimMes;
+      }
       
       const { data, error } = await supabase
         .from("consultas")
@@ -62,8 +76,8 @@ export default function Dashboard() {
           pacientes (nome)
         `)
         .eq("user_id", user?.id)
-        .gte("data_agendamento", inicioDia.toISOString())
-        .lte("data_agendamento", fimDia.toISOString())
+        .gte("data_agendamento", inicio.toISOString())
+        .lte("data_agendamento", fim.toISOString())
         .order("data_agendamento");
 
       if (error) throw error;
@@ -207,55 +221,114 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Consultas de Hoje */}
+      {/* Consultas por Período */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Consultas de Hoje
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Consultas
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant={periodoFiltro === "hoje" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPeriodoFiltro("hoje")}
+              >
+                Hoje
+              </Button>
+              <Button
+                variant={periodoFiltro === "semana" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPeriodoFiltro("semana")}
+              >
+                Esta Semana
+              </Button>
+              <Button
+                variant={periodoFiltro === "mes" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPeriodoFiltro("mes")}
+              >
+                Este Mês
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {consultasHoje && consultasHoje.length > 0 ? (
+          {consultasFiltradas && consultasFiltradas.length > 0 ? (
             <div className="space-y-3">
-              {consultasHoje.map((consulta) => (
-                <button
-                  key={consulta.id}
-                  onClick={() => {
-                    setConsultaSelecionada(consulta);
-                    setModalEfetivarOpen(true);
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div>
-                    <p className="font-medium text-primary">
-                      {consulta.pacientes?.nome}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(parseISO(consulta.data_agendamento), "HH:mm")}
-                      {consulta.tipo_consulta && ` - ${consulta.tipo_consulta}`}
-                    </p>
+              {consultasFiltradas.map((consulta) => {
+                const isConcluida = consulta.status === "concluída";
+                return (
+                  <div
+                    key={consulta.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      isConcluida ? "opacity-60 bg-muted/30" : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <button
+                      onClick={() => {
+                        if (!isConcluida) {
+                          setConsultaSelecionada(consulta);
+                          setModalEfetivarOpen(true);
+                        }
+                      }}
+                      disabled={isConcluida}
+                      className="flex-1 text-left"
+                    >
+                      <div>
+                        <p className="font-medium text-primary">
+                          {consulta.pacientes?.nome}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(parseISO(consulta.data_agendamento), "dd/MM/yyyy HH:mm")}
+                          {consulta.tipo_consulta && ` - ${consulta.tipo_consulta}`}
+                        </p>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusBadge(consulta.status || "pendente")}>
+                        {consulta.status}
+                      </Badge>
+                      {isConcluida && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setConsultaSelecionada(consulta);
+                            setModalEditarObsOpen(true);
+                          }}
+                          title="Editar observações"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant={getStatusBadge(consulta.status || "pendente")}>
-                    {consulta.status}
-                  </Badge>
-                </button>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhuma consulta agendada para hoje
+              Nenhuma consulta encontrada neste período
             </p>
           )}
         </CardContent>
       </Card>
 
       {consultaSelecionada && (
-        <EfetivarConsultaModal
-          open={modalEfetivarOpen}
-          onOpenChange={setModalEfetivarOpen}
-          consulta={consultaSelecionada}
-        />
+        <>
+          <EfetivarConsultaModal
+            open={modalEfetivarOpen}
+            onOpenChange={setModalEfetivarOpen}
+            consulta={consultaSelecionada}
+          />
+          <EditarObservacoesModal
+            open={modalEditarObsOpen}
+            onOpenChange={setModalEditarObsOpen}
+            consulta={consultaSelecionada}
+          />
+        </>
       )}
     </div>
   );

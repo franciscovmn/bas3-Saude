@@ -8,6 +8,7 @@ import {
   Settings,
   Activity,
   LogOut,
+  Bot,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const menuItems = [
   { title: "Pacientes", url: "/pacientes", icon: Users },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Relatórios", url: "/relatorios", icon: FileText },
+  { title: "Assistente", url: "/assistente", icon: Bot },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 

@@ -21,7 +21,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FileText, Filter, TrendingUp, Award, BarChart } from "lucide-react";
+import { FileText, Filter, TrendingUp, Award, BarChart as BarChartIcon } from "lucide-react";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
@@ -147,6 +148,17 @@ export default function Relatorios() {
     ? consultasPacientesFidelizados.reduce((a, b) => a + b, 0) / consultasPacientesFidelizados.length
     : 0;
 
+  // Dados para gráficos
+  const dadosFidelizacao = [
+    { name: "Com Vínculo", value: pacientesComVinculo, color: "hsl(var(--primary))" },
+    { name: "Sem Vínculo", value: pacientesSemVinculo, color: "hsl(var(--muted))" },
+  ];
+
+  const dadosDistribuicaoPlanos = todosPlanos?.map(plano => ({
+    nome: plano.nome_plano,
+    quantidade: todosPacientes?.filter(p => p.plano_fidelizacao_id === plano.id).length || 0,
+  })).filter(d => d.quantidade > 0) || [];
+
   const getStatusBadge = (status: string): "default" | "secondary" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
       novo: "default",
@@ -211,8 +223,8 @@ export default function Relatorios() {
         </CardContent>
       </Card>
 
-      {/* Métricas */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Métricas com Gráficos */}
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -222,48 +234,45 @@ export default function Relatorios() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-3xl font-bold">{taxaFidelizacao.toFixed(1)}%</div>
-            <div className="space-y-2">
-              <Progress value={taxaFidelizacao} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {pacientesComVinculo} de {totalPacientesAtivos} pacientes ativos
-              </p>
-            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={dadosFidelizacao}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {dadosFidelizacao.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Award className="h-4 w-4" />
-              Plano Mais Popular
+              <BarChartIcon className="h-4 w-4" />
+              Distribuição de Planos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {planoMaisPopular?.nome_plano || "N/A"}
-            </div>
-            {planoMaisPopularId && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {contagemPlanos?.[parseInt(planoMaisPopularId)]} pacientes
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <BarChart className="h-4 w-4" />
-              Média de Consultas (Fidelizados)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {mediaConsultasFidelizados.toFixed(1)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              consultas por paciente
-            </p>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={dadosDistribuicaoPlanos}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nome" fontSize={12} />
+                <YAxis />
+                <RechartsTooltip />
+                <Bar dataKey="quantidade" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
