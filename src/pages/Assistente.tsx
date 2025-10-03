@@ -50,12 +50,18 @@ export default function Assistente() {
         throw new Error("Erro ao enviar mensagem");
       }
 
-      const data = await response.json();
+      // ####### INÍCIO DA MUDANÇA #######
+      // Alterado de response.json() para response.text()
+      const replyText = await response.text(); 
+      // ####### FIM DA MUDANÇA #######
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.reply || "Desculpe, não consegui processar sua mensagem.",
+        // ####### MUDANÇA #######
+        // Usando a variável de texto diretamente
+        content: replyText || "Desculpe, não consegui processar sua mensagem.",
+        // ####### FIM DA MUDANÇA #######
         timestamp: new Date(),
       };
 
