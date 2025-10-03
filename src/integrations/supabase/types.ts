@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      assistente_historico: {
+        Row: {
+          content: string
+          created_at: string
+          id: number
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: number
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: number
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bloqueios_agenda: {
         Row: {
           data_fim: string
@@ -66,7 +90,6 @@ export type Database = {
           paciente_id: number | null
           plano_fidelizacao_id: number | null
           restricoes: string | null
-          resultado: string | null
           status: string | null
           tipo_consulta: string | null
           user_id: string | null
@@ -80,7 +103,6 @@ export type Database = {
           paciente_id?: number | null
           plano_fidelizacao_id?: number | null
           restricoes?: string | null
-          resultado?: string | null
           status?: string | null
           tipo_consulta?: string | null
           user_id?: string | null
@@ -94,7 +116,6 @@ export type Database = {
           paciente_id?: number | null
           plano_fidelizacao_id?: number | null
           restricoes?: string | null
-          resultado?: string | null
           status?: string | null
           tipo_consulta?: string | null
           user_id?: string | null
@@ -295,9 +316,9 @@ export type Database = {
           data_cadastro: string | null
           data_nascimento: string | null
           email: string | null
-          endereco: string | null
           id: number
           nome: string
+          objetivo: string | null
           plano_fidelizacao_id: number | null
           restricoes: string | null
           status: string | null
@@ -308,9 +329,9 @@ export type Database = {
           data_cadastro?: string | null
           data_nascimento?: string | null
           email?: string | null
-          endereco?: string | null
           id?: number
           nome: string
+          objetivo?: string | null
           plano_fidelizacao_id?: number | null
           restricoes?: string | null
           status?: string | null
@@ -321,9 +342,9 @@ export type Database = {
           data_cadastro?: string | null
           data_nascimento?: string | null
           email?: string | null
-          endereco?: string | null
           id?: number
           nome?: string
+          objetivo?: string | null
           plano_fidelizacao_id?: number | null
           restricoes?: string | null
           status?: string | null
@@ -397,6 +418,36 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      relatorios_salvos: {
+        Row: {
+          created_at: string
+          id: number
+          pergunta: string
+          resultado: string
+          tipo_visualizacao: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          pergunta: string
+          resultado: string
+          tipo_visualizacao?: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          pergunta?: string
+          resultado?: string
+          tipo_visualizacao?: string
+          titulo?: string
+          user_id?: string
         }
         Relationships: []
       }

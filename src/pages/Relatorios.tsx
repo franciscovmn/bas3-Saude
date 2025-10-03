@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -21,8 +26,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FileText, Filter, TrendingUp, Award, BarChart as BarChartIcon } from "lucide-react";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
+import { FileText, Filter, TrendingUp, BarChart as BarChartIcon, FileBarChart } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
@@ -38,6 +43,12 @@ export default function Relatorios() {
     observacoes: string;
     pacienteNome: string;
   }>({ open: false, observacoes: "", pacienteNome: "" });
+  const [selectedReport, setSelectedReport] = useState<{
+    open: boolean;
+    titulo: string;
+    pergunta: string;
+    resultado: string;
+  }>({ open: false, titulo: "", pergunta: "", resultado: "" });
 
   const { data: consultas } = useQuery({
     queryKey: ["relatorio-consultas", dataInicio, dataFim, user?.id],
@@ -66,18 +77,6 @@ export default function Relatorios() {
     enabled: !!user?.id,
   });
 
-  const { data: todosPlanos } = useQuery({
-    queryKey: ["todos-planos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("planos_fidelizacao")
-        .select("*");
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const { data: todosPacientes } = useQuery({
     queryKey: ["todos-pacientes-relatorio", user?.id],
     queryFn: async () => {
@@ -92,14 +91,14 @@ export default function Relatorios() {
     enabled: !!user?.id,
   });
 
-  const { data: todasConsultasConcluidas } = useQuery({
-    queryKey: ["todas-consultas-concluidas", user?.id],
+  const { data: relatoriosSalvos } = useQuery({
+    queryKey: ["relatorios-salvos", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("consultas")
-        .select("id, paciente_id")
+        .from("relatorios_salvos")
+        .select("*")
         .eq("user_id", user?.id)
-        .eq("status", "concluída");
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
@@ -115,49 +114,11 @@ export default function Relatorios() {
     ? (pacientesComVinculo / totalPacientesAtivos) * 100 
     : 0;
 
-  // Plano mais popular
-  const contagemPlanos = todosPacientes?.reduce((acc, p) => {
-    if (p.plano_fidelizacao_id) {
-      acc[p.plano_fidelizacao_id] = (acc[p.plano_fidelizacao_id] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<number, number>);
-
-  const planoMaisPopularId = contagemPlanos 
-    ? Object.entries(contagemPlanos).sort((a, b) => b[1] - a[1])[0]?.[0]
-    : null;
-
-  const planoMaisPopular = planoMaisPopularId 
-    ? todosPlanos?.find(p => p.id === parseInt(planoMaisPopularId))
-    : null;
-
-  // Média de consultas por paciente fidelizado
-  const consultasPorPaciente = todasConsultasConcluidas?.reduce((acc, c) => {
-    acc[c.paciente_id] = (acc[c.paciente_id] || 0) + 1;
-    return acc;
-  }, {} as Record<number, number>);
-
-  const pacientesFidelizadosIds = todosPacientes
-    ?.filter(p => p.status === "com vinculo")
-    .map(p => p.id) || [];
-
-  const consultasPacientesFidelizados = pacientesFidelizadosIds
-    .map(id => consultasPorPaciente?.[id] || 0);
-
-  const mediaConsultasFidelizados = consultasPacientesFidelizados.length > 0
-    ? consultasPacientesFidelizados.reduce((a, b) => a + b, 0) / consultasPacientesFidelizados.length
-    : 0;
-
   // Dados para gráficos
   const dadosFidelizacao = [
     { name: "Com Vínculo", value: pacientesComVinculo, color: "hsl(var(--primary))" },
     { name: "Sem Vínculo", value: pacientesSemVinculo, color: "hsl(var(--muted))" },
   ];
-
-  const dadosDistribuicaoPlanos = todosPlanos?.map(plano => ({
-    nome: plano.nome_plano,
-    quantidade: todosPacientes?.filter(p => p.plano_fidelizacao_id === plano.id).length || 0,
-  })).filter(d => d.quantidade > 0) || [];
 
   const getStatusBadge = (status: string): "default" | "secondary" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -174,9 +135,107 @@ export default function Relatorios() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
           <p className="text-muted-foreground">
-            Histórico completo de consultas realizadas
+            Análises e insights dos dados da clínica
           </p>
         </div>
+      </div>
+
+      {/* KPIs Fixos */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Taxa de Fidelização
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-3xl font-bold">{taxaFidelizacao.toFixed(1)}%</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={dadosFidelizacao}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {dadosFidelizacao.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <BarChartIcon className="h-4 w-4" />
+              Total de Consultas Concluídas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{consultas?.length || 0}</div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {dataInicio || dataFim ? "No período selecionado" : "Total geral"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Minhas Análises */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <FileBarChart className="h-6 w-6" />
+            Minhas Análises Salvas
+          </h2>
+        </div>
+
+        {relatoriosSalvos && relatoriosSalvos.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {relatoriosSalvos.map((relatorio) => (
+              <Card
+                key={relatorio.id}
+                className="cursor-pointer hover:bg-accent transition-colors"
+                onClick={() => setSelectedReport({
+                  open: true,
+                  titulo: relatorio.titulo,
+                  pergunta: relatorio.pergunta,
+                  resultado: relatorio.resultado,
+                })}
+              >
+                <CardHeader>
+                  <CardTitle className="text-base">{relatorio.titulo}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {relatorio.resultado}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {format(new Date(relatorio.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <FileBarChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Nenhuma análise salva ainda.</p>
+              <p className="text-sm mt-1">
+                Use o Assistente para gerar análises e salvá-las aqui.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Filtros */}
@@ -184,7 +243,7 @@ export default function Relatorios() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filtros
+            Filtros de Consultas
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -222,62 +281,6 @@ export default function Relatorios() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Métricas com Gráficos */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Taxa de Fidelização
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-3xl font-bold">{taxaFidelizacao.toFixed(1)}%</div>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={dadosFidelizacao}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {dadosFidelizacao.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <BarChartIcon className="h-4 w-4" />
-              Distribuição de Planos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dadosDistribuicaoPlanos}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="nome" fontSize={12} />
-                <YAxis />
-                <RechartsTooltip />
-                <Bar dataKey="quantidade" fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabela de Resultados */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -382,6 +385,26 @@ export default function Relatorios() {
         observacoes={observacoesModal.observacoes}
         pacienteNome={observacoesModal.pacienteNome}
       />
+
+      <Dialog open={selectedReport.open} onOpenChange={(open) => setSelectedReport({ ...selectedReport, open })}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{selectedReport.titulo}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Pergunta</Label>
+              <p className="text-sm mt-1">{selectedReport.pergunta}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Resultado</Label>
+              <div className="mt-1 p-4 bg-muted rounded-lg">
+                <p className="text-sm whitespace-pre-wrap">{selectedReport.resultado}</p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
