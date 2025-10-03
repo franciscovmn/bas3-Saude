@@ -1,4 +1,6 @@
-import { useState } from "react";
+// src/pages/Assistente.tsx
+
+import { useState, useEffect, useRef } from "react"; // Adicionado useEffect e useRef
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +16,34 @@ interface Message {
 }
 
 export default function Assistente() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // ####### INÍCIO DA MUDANÇA #######
+  // 1. Carregar o histórico do localStorage ao iniciar.
+  // Usamos uma função para que a leitura do localStorage aconteça apenas uma vez.
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const savedMessages = localStorage.getItem("chatHistory");
+    if (savedMessages) {
+      // Precisamos converter as strings de data de volta para objetos Date
+      const parsedMessages = JSON.parse(savedMessages) as Message[];
+      return parsedMessages.map(msg => ({ ...msg, timestamp: new Date(msg.timestamp) }));
+    }
+    return [];
+  });
+  // ####### FIM DA MUDANÇA #######
+
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // ####### INÍCIO DA MUDANÇA #######
+  // 2. Salvar o histórico no localStorage sempre que ele for atualizado.
+  useEffect(() => {
+    localStorage.setItem("chatHistory", JSON.stringify(messages));
+    // Rola para a mensagem mais recente
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
+  // ####### FIM DA MUDANÇA #######
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,18 +77,12 @@ export default function Assistente() {
         throw new Error("Erro ao enviar mensagem");
       }
 
-      // ####### INÍCIO DA MUDANÇA #######
-      // Alterado de response.json() para response.text()
-      const replyText = await response.text(); 
-      // ####### FIM DA MUDANÇA #######
+      const replyText = await response.text();
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        // ####### MUDANÇA #######
-        // Usando a variável de texto diretamente
         content: replyText || "Desculpe, não consegui processar sua mensagem.",
-        // ####### FIM DA MUDANÇA #######
         timestamp: new Date(),
       };
 
@@ -87,11 +108,14 @@ export default function Assistente() {
       </div>
 
       <Card className="flex-1 flex flex-col">
-        <CardHeader>
-          <CardTitle>Chat</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Chat</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => setMessages([])}>
+                Limpar Histórico
+            </Button>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-0">
-          <ScrollArea className="flex-1 px-4">
+          <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center space-y-2">
