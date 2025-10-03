@@ -1,99 +1,99 @@
-// src/pages/Assistente.tsx
-
-import { useState, useEffect, useRef } from "react"; // Adicionado useEffect e useRef
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getChatHistory,
+  saveChatMessage,
+  clearChatHistory,
+} from "@/integrations/supabase/api/assistente"; // Importando nossas novas funções
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User } from "lucide-react";
+import { Bot, Send, User, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
-  id: string;
+  id: number;
   role: "user" | "assistant";
   content: string;
-  timestamp: Date;
+  created_at: string;
 }
 
 export default function Assistente() {
-  // ####### INÍCIO DA MUDANÇA #######
-  // 1. Carregar o histórico do localStorage ao iniciar.
-  // Usamos uma função para que a leitura do localStorage aconteça apenas uma vez.
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const savedMessages = localStorage.getItem("chatHistory");
-    if (savedMessages) {
-      // Precisamos converter as strings de data de volta para objetos Date
-      const parsedMessages = JSON.parse(savedMessages) as Message[];
-      return parsedMessages.map(msg => ({ ...msg, timestamp: new Date(msg.timestamp) }));
-    }
-    return [];
-  });
-  // ####### FIM DA MUDANÇA #######
-
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // ####### INÍCIO DA MUDANÇA #######
-  // 2. Salvar o histórico no localStorage sempre que ele for atualizado.
+  // useQuery agora chama nossa função de API getChatHistory
+  const { data: messages, isLoading: isLoadingHistory } = useQuery<Message[]>({
+    queryKey: ["assistente_historico"],
+    queryFn: () => getChatHistory(user!.id),
+    enabled: !!user,
+  });
+
+  // useMutation para salvar mensagens
+  const { mutate: saveMessage, isPending: isSavingMessage } = useMutation({
+    mutationFn: (newMessage: { role: "user" | "assistant"; content: string }) =>
+      saveChatMessage({ ...newMessage, userId: user!.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assistente_historico"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao salvar mensagem: " + error.message);
+    },
+  });
+
+  // useMutation para limpar o histórico
+  const { mutate: clearHistory } = useMutation({
+    mutationFn: () => clearChatHistory(user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assistente_historico"] });
+      toast.success("Histórico limpo com sucesso!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao limpar histórico: " + error.message);
+    },
+  });
+
   useEffect(() => {
-    localStorage.setItem("chatHistory", JSON.stringify(messages));
-    // Rola para a mensagem mais recente
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
-  // ####### FIM DA MUDANÇA #######
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!inputMessage.trim() || isLoading) return;
+    if (!inputMessage.trim() || isSavingMessage) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const messageContent = inputMessage;
     setInputMessage("");
-    setIsLoading(true);
+    saveMessage({ role: "user", content: messageContent });
 
     try {
       const response = await fetch(
         "https://bossycaracal-n8n.cloudfy.cloud/webhook/a5075389-9770-4f21-aaa1-cf0ea54b9510",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message: inputMessage }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: messageContent }),
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Erro ao enviar mensagem");
-      }
-
+      if (!response.ok) throw new Error("Erro na resposta do n8n");
       const replyText = await response.text();
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: replyText || "Desculpe, não consegui processar sua mensagem.",
-        timestamp: new Date(),
-      };
+      saveMessage({ role: "assistant", content: replyText });
 
-      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
-      toast.error("Erro ao comunicar com o assistente. Tente novamente.");
-    } finally {
-      setIsLoading(false);
+      console.error("Erro ao comunicar com o assistente:", error);
+      const errorMessage = "Erro ao comunicar com o assistente. Tente novamente.";
+      saveMessage({ role: 'assistant', content: errorMessage });
+      toast.error(errorMessage);
     }
   };
+
+  const isLoading = isSavingMessage || isLoadingHistory;
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] p-6 gap-4">
@@ -110,13 +110,16 @@ export default function Assistente() {
       <Card className="flex-1 flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Chat</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => setMessages([])}>
+            <Button variant="outline" size="sm" onClick={() => clearHistory()}>
+                <Trash2 className="h-4 w-4 mr-2" />
                 Limpar Histórico
             </Button>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-0">
           <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
-            {messages.length === 0 ? (
+            {isLoadingHistory ? (
+                <div className="flex items-center justify-center h-full">Carregando histórico...</div>
+            ) : messages?.length === 0 ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center space-y-2">
                   <Bot className="h-12 w-12 mx-auto opacity-50" />
@@ -125,13 +128,8 @@ export default function Assistente() {
               </div>
             ) : (
               <div className="space-y-4 py-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex gap-3 ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
+                {messages?.map((message) => (
+                  <div key={message.id} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                     {message.role === "assistant" && (
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
@@ -139,19 +137,10 @@ export default function Assistente() {
                         </div>
                       </div>
                     )}
-                    <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
+                    <div className={`max-w-[80%] rounded-lg px-4 py-2 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(message.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                     {message.role === "user" && (
@@ -163,15 +152,15 @@ export default function Assistente() {
                     )}
                   </div>
                 ))}
-                {isLoading && (
+                {isSavingMessage && messages && messages[messages.length - 1]?.role === 'user' && (
                   <div className="flex gap-3 justify-start">
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                         <Bot className="h-5 w-5 text-primary-foreground" />
-                      </div>
+                        </div>
                     </div>
                     <div className="bg-muted rounded-lg px-4 py-2">
-                      <p className="text-sm">Digitando...</p>
+                        <p className="text-sm">Digitando...</p>
                     </div>
                   </div>
                 )}
