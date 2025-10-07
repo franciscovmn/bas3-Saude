@@ -29,7 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          navigate('/');
+          // Só redireciona para '/' se estiver na página de auth
+          if (window.location.pathname === '/auth') {
+            navigate('/');
+          }
         } else if (event === 'SIGNED_OUT') {
           navigate('/auth');
         }

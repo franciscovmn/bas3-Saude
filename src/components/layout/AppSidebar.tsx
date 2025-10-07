@@ -36,7 +36,11 @@ const menuItems = [
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onNavigate?: () => void;
+}
+
+export function AppSidebar({ onNavigate }: AppSidebarProps = {}) {
   const { user, signOut } = useAuth();
 
   return (
@@ -58,6 +62,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
+                      onClick={onNavigate}
                       className={({ isActive }) =>
                         isActive
                           ? "bg-sidebar-accent text-sidebar-accent-foreground"

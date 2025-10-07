@@ -41,7 +41,7 @@ export function NovaConsultaModal({ open, onOpenChange }: NovaConsultaModalProps
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pacientes")
-        .select("id, nome")
+        .select("id, nome, plano_fidelizacao_id, data_inicio_plano_atual")
         .eq("user_id", user?.id)
         .order("nome");
 
@@ -51,8 +51,55 @@ export function NovaConsultaModal({ open, onOpenChange }: NovaConsultaModalProps
     enabled: open && !!user?.id,
   });
 
+  // Buscar dados do plano do paciente selecionado
+  const { data: pacienteSelecionado } = useQuery({
+    queryKey: ["paciente-detalhes", pacienteId],
+    queryFn: async () => {
+      const { data: pacienteData, error: pacienteError } = await supabase
+        .from("pacientes")
+        .select("*, planos_fidelizacao(*)")
+        .eq("id", parseInt(pacienteId))
+        .single();
+
+      if (pacienteError) throw pacienteError;
+
+      // Contar consultas do ciclo atual
+      let consultasNoCiclo = 0;
+      if (pacienteData?.data_inicio_plano_atual) {
+        const { data: consultasData, error: consultasError } = await supabase
+          .from("consultas")
+          .select("id, status")
+          .eq("paciente_id", parseInt(pacienteId))
+          .gte("data_agendamento", pacienteData.data_inicio_plano_atual);
+
+        if (!consultasError && consultasData) {
+          consultasNoCiclo = consultasData.length;
+        }
+      }
+
+      return {
+        ...pacienteData,
+        consultasNoCiclo,
+      };
+    },
+    enabled: !!pacienteId && open,
+  });
+
   const criarConsultaMutation = useMutation({
     mutationFn: async () => {
+      // Verificar se o paciente atingiu o limite de consultas do plano
+      if (pacienteSelecionado?.planos_fidelizacao) {
+        const plano = pacienteSelecionado.planos_fidelizacao;
+        const consultasNoCiclo = pacienteSelecionado.consultasNoCiclo || 0;
+        const limiteConsultas = plano.quantidade_consultas || 0;
+
+        if (plano.nome_plano !== "Consulta Avulsa" && consultasNoCiclo >= limiteConsultas) {
+          throw new Error(
+            `Este paciente já atingiu o limite de ${limiteConsultas} consultas do plano "${plano.nome_plano}". É necessário renovar o plano antes de agendar mais consultas.`
+          );
+        }
+      }
+
       const dataHora = `${dataAgendamento}T${horaAgendamento}:00`;
       
       const { error } = await supabase
@@ -80,7 +127,7 @@ export function NovaConsultaModal({ open, onOpenChange }: NovaConsultaModalProps
     },
     onError: (error) => {
       console.error("Erro ao agendar consulta:", error);
-      toast.error("Erro ao agendar consulta. Tente novamente.");
+      toast.error(error instanceof Error ? error.message : "Erro ao agendar consulta. Tente novamente.");
     },
   });
 

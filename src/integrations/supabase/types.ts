@@ -86,10 +86,10 @@ export type Database = {
           data_conclusao: string | null
           id: number
           objetivo_consulta: string | null
+          observacao_paciente: string | null
           observacoes: string | null
           paciente_id: number | null
           plano_fidelizacao_id: number | null
-          restricoes: string | null
           status: string | null
           tipo_consulta: string | null
           user_id: string | null
@@ -99,10 +99,10 @@ export type Database = {
           data_conclusao?: string | null
           id?: number
           objetivo_consulta?: string | null
+          observacao_paciente?: string | null
           observacoes?: string | null
           paciente_id?: number | null
           plano_fidelizacao_id?: number | null
-          restricoes?: string | null
           status?: string | null
           tipo_consulta?: string | null
           user_id?: string | null
@@ -112,10 +112,10 @@ export type Database = {
           data_conclusao?: string | null
           id?: number
           objetivo_consulta?: string | null
+          observacao_paciente?: string | null
           observacoes?: string | null
           paciente_id?: number | null
           plano_fidelizacao_id?: number | null
-          restricoes?: string | null
           status?: string | null
           tipo_consulta?: string | null
           user_id?: string | null
@@ -314,6 +314,7 @@ export type Database = {
       pacientes: {
         Row: {
           data_cadastro: string | null
+          data_inicio_plano_atual: string | null
           data_nascimento: string | null
           email: string | null
           id: number
@@ -327,6 +328,7 @@ export type Database = {
         }
         Insert: {
           data_cadastro?: string | null
+          data_inicio_plano_atual?: string | null
           data_nascimento?: string | null
           email?: string | null
           id?: number
@@ -340,6 +342,7 @@ export type Database = {
         }
         Update: {
           data_cadastro?: string | null
+          data_inicio_plano_atual?: string | null
           data_nascimento?: string | null
           email?: string | null
           id?: number
@@ -535,7 +538,7 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: string
+        Returns: unknown
       }
       match_documents: {
         Args: { filter?: Json; match_count?: number; query_embedding: string }

@@ -15,6 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -38,6 +41,7 @@ export function EfetivarConsultaModal({
   const queryClient = useQueryClient();
   const [observacoes, setObservacoes] = useState("");
   const [planoSelecionado, setPlanoSelecionado] = useState<string>("");
+  const [agendarRetorno, setAgendarRetorno] = useState(false);
 
   const { data: paciente } = useQuery({
     queryKey: ["paciente-efetivacao", consulta?.paciente_id],
@@ -69,18 +73,21 @@ export function EfetivarConsultaModal({
   });
 
   const { data: consultasRealizadas } = useQuery({
-    queryKey: ["consultas-realizadas", consulta?.paciente_id],
+    queryKey: ["consultas-realizadas", consulta?.paciente_id, paciente?.data_inicio_plano_atual],
     queryFn: async () => {
+      if (!paciente?.data_inicio_plano_atual) return 0;
+      
       const { data, error } = await supabase
         .from("consultas")
         .select("id")
         .eq("paciente_id", consulta?.paciente_id)
-        .eq("status", "concluída");
+        .eq("status", "concluída")
+        .gte("data_agendamento", paciente.data_inicio_plano_atual);
 
       if (error) throw error;
       return data?.length || 0;
     },
-    enabled: !!consulta?.paciente_id && open && paciente?.status !== "paciente novo",
+    enabled: !!consulta?.paciente_id && open && paciente?.status !== "paciente novo" && !!paciente?.data_inicio_plano_atual,
   });
 
   // Definir plano pré-selecionado para pacientes com plano
@@ -115,7 +122,7 @@ export function EfetivarConsultaModal({
 
       if (consultaError) throw consultaError;
 
-      // 2. Se for paciente novo, atualizar status e plano
+      // 2. Se for paciente novo, atualizar status, plano e data_inicio_plano_atual
       if (paciente?.status === "paciente novo") {
         const isConsultaAvulsa = planoEscolhido?.nome_plano === "Consulta Avulsa";
         const novoStatus = isConsultaAvulsa ? "sem vinculo" : "com vinculo";
@@ -125,6 +132,7 @@ export function EfetivarConsultaModal({
           .update({
             status: novoStatus,
             plano_fidelizacao_id: planoId,
+            data_inicio_plano_atual: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
           })
           .eq("id", paciente.id);
 
@@ -156,6 +164,27 @@ export function EfetivarConsultaModal({
           if (pacienteError) throw pacienteError;
         }
       }
+
+      // 4. Se agendarRetorno estiver marcado, enviar webhook para n8n
+      if (agendarRetorno && paciente) {
+        try {
+          await fetch("https://bossycaracal-n8n.cloudfy.cloud/webhook/aeb393db-ec5a-4811-8dd5-b1b5eaa5df46", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id: paciente.id,
+              nome: paciente.nome,
+              telefone: paciente.telefone,
+              data_inicio_plano_atual: new Date().toISOString().split('T')[0],
+            }),
+          });
+        } catch (error) {
+          console.error("Erro ao enviar webhook:", error);
+          // Não bloquear a efetivação se o webhook falhar
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Consulta efetivada com sucesso!");
@@ -166,6 +195,7 @@ export function EfetivarConsultaModal({
       onOpenChange(false);
       setObservacoes("");
       setPlanoSelecionado("");
+      setAgendarRetorno(false);
     },
     onError: (error) => {
       console.error("Erro ao efetivar consulta:", error);
@@ -186,6 +216,7 @@ export function EfetivarConsultaModal({
   const consultasDoPlano = consultasRealizadas || 0;
   const totalConsultasPlano = planoAtual?.quantidade_consultas || 0;
   const progressoConsultas = totalConsultasPlano > 0 ? (consultasDoPlano / totalConsultasPlano) * 100 : 0;
+  const isUltimaConsulta = !isPacienteNovo && planoAtual && planoAtual.nome_plano !== "Consulta Avulsa" && (consultasDoPlano + 1) >= totalConsultasPlano;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,6 +226,16 @@ export function EfetivarConsultaModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Alerta de Última Consulta */}
+          {isUltimaConsulta && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Atenção:</strong> Esta é a última consulta do plano deste paciente. Converse sobre a renovação.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Contexto do Paciente */}
           {(paciente?.objetivo || paciente?.restricoes) && (
             <Card className="bg-muted/50">
@@ -215,33 +256,47 @@ export function EfetivarConsultaModal({
             </Card>
           )}
 
-          {/* Seleção de Plano */}
-          <div className="space-y-2">
-            <Label>Plano da Consulta</Label>
-            <Select value={planoSelecionado} onValueChange={setPlanoSelecionado}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o plano" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                {planos?.map((plano) => (
-                  <SelectItem key={plano.id} value={plano.id.toString()}>
-                    {plano.nome_plano} - R$ {Number(plano.preco).toFixed(2)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Progresso para pacientes com plano */}
-          {!isPacienteNovo && planoAtual && planoAtual.nome_plano !== "Consulta Avulsa" && (
+          {/* Seleção de Plano - Para Paciente Novo */}
+          {isPacienteNovo && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <Label>Progresso no Plano</Label>
-                <span className="text-muted-foreground">
-                  Consulta {consultasDoPlano + 1} de {totalConsultasPlano}
-                </span>
+              <Label>Plano da Consulta *</Label>
+              <Select value={planoSelecionado} onValueChange={setPlanoSelecionado}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o plano" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {planos?.map((plano) => (
+                    <SelectItem key={plano.id} value={plano.id.toString()}>
+                      {plano.nome_plano} - R$ {Number(plano.preco).toFixed(2)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Plano Atual e Progresso - Para Paciente de Retorno */}
+          {!isPacienteNovo && planoAtual && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Plano Atual</Label>
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm font-medium">{planoAtual.nome_plano}</p>
+                  <p className="text-xs text-muted-foreground">R$ {Number(planoAtual.preco).toFixed(2)}</p>
+                </div>
               </div>
-              <Progress value={progressoConsultas} className="h-2" />
+
+              {planoAtual.nome_plano !== "Consulta Avulsa" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <Label>Progresso no Plano</Label>
+                    <span className="text-muted-foreground">
+                      Consulta {consultasDoPlano + 1} de {totalConsultasPlano}
+                    </span>
+                  </div>
+                  <Progress value={progressoConsultas} className="h-2" />
+                </div>
+              )}
             </div>
           )}
 
@@ -254,6 +309,23 @@ export function EfetivarConsultaModal({
               onChange={(e) => setObservacoes(e.target.value)}
               placeholder="Registre suas anotações sobre a consulta..."
               rows={4}
+            />
+          </div>
+
+          {/* Switch para Agendar Retorno via WhatsApp */}
+          <div className="flex items-center justify-between space-x-2 p-3 bg-muted/50 rounded-md">
+            <div className="space-y-0.5">
+              <Label htmlFor="agendar-retorno" className="cursor-pointer">
+                Agendar Retorno via WhatsApp
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Enviar mensagem automática para agendar próxima consulta
+              </p>
+            </div>
+            <Switch
+              id="agendar-retorno"
+              checked={agendarRetorno}
+              onCheckedChange={setAgendarRetorno}
             />
           </div>
         </div>
