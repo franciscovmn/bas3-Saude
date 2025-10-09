@@ -248,6 +248,44 @@ export type Database = {
           },
         ]
       }
+      mensagens_fora_do_escopo: {
+        Row: {
+          created_at: string
+          data_hora: string
+          id: string
+          mensagem: string
+          nutricionista_uid: string
+          paciente_id: number
+          resolvido: boolean
+        }
+        Insert: {
+          created_at?: string
+          data_hora?: string
+          id?: string
+          mensagem: string
+          nutricionista_uid: string
+          paciente_id: number
+          resolvido?: boolean
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          id?: string
+          mensagem?: string
+          nutricionista_uid?: string
+          paciente_id?: number
+          resolvido?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_fora_do_escopo_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       n8n_chat_histories: {
         Row: {
           id: number

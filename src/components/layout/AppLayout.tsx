@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppSidebar } from "./AppSidebar";
 import logoHorizontal from "@/assets/logo-horizontal.png";
+import { MensagemForaEscopoNotification } from "@/components/notifications/MensagemForaEscopoNotification";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -39,8 +40,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
-          <header className="md:hidden flex items-center justify-center p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-40">
+          <header className="md:hidden flex items-center justify-between p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-40">
+            <div className="flex-1" />
             <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
+            <div className="flex-1 flex justify-end">
+              <MensagemForaEscopoNotification />
+            </div>
           </header>
 
           {/* Main Content */}
