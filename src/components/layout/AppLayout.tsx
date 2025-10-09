@@ -39,10 +39,11 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
-          <header className="md:hidden relative flex items-center p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-40">
-            <div className="absolute left-1/2 -translate-x-1/2">
-              <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
-            </div>
+          <header className="md:hidden flex items-center justify-between p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-40">
+            {/* Espaçador invisível para centralizar logo */}
+            <div className="w-10 shrink-0" />
+            <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
+            <div className="w-10 shrink-0" />
           </header>
 
           {/* Main Content */}
