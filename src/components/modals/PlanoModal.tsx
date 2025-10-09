@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PlanoModalProps {
   open: boolean;
@@ -30,6 +37,7 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
     preco: "",
     quantidade_consultas: "",
     duracao_meses: "",
+    renovacao_automatica: "true",
   });
 
   useEffect(() => {
@@ -40,6 +48,7 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
         preco: plano.preco?.toString() || "",
         quantidade_consultas: plano.quantidade_consultas?.toString() || "",
         duracao_meses: plano.duracao_meses?.toString() || "",
+        renovacao_automatica: plano.renovacao_automatica?.toString() || "true",
       });
     } else {
       setFormData({
@@ -48,6 +57,7 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
         preco: "",
         quantidade_consultas: "",
         duracao_meses: "",
+        renovacao_automatica: "true",
       });
     }
   }, [plano, open]);
@@ -60,6 +70,7 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
         preco: parseFloat(formData.preco),
         quantidade_consultas: parseInt(formData.quantidade_consultas),
         duracao_meses: parseInt(formData.duracao_meses),
+        renovacao_automatica: formData.renovacao_automatica === "true",
       };
 
       if (isEdit) {
@@ -95,7 +106,7 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar" : "Novo"} Plano</DialogTitle>
         </DialogHeader>
@@ -159,6 +170,22 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
               onChange={(e) => setFormData({ ...formData, duracao_meses: e.target.value })}
               placeholder="0"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="renovacao_automatica">Tipo de Plano *</Label>
+            <Select
+              value={formData.renovacao_automatica}
+              onValueChange={(value) => setFormData({ ...formData, renovacao_automatica: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Recorrente (Com Vínculo)</SelectItem>
+                <SelectItem value="false">Avulso (Sem Vínculo)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>

@@ -22,22 +22,22 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Mobile Sidebar */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-64">
+          <SheetContent side="left" className="p-0 w-64 sm:w-72">
             <AppSidebar onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
-          <header className="md:hidden flex items-center gap-2 p-4 border-b border-border bg-background">
+          <header className="md:hidden flex items-center gap-2 p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-10">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="shrink-0">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
             </Sheet>
-            <h1 className="font-bold text-lg">ClinicFlow</h1>
+            <h1 className="font-bold text-base sm:text-lg">ClinicFlow</h1>
           </header>
 
           {/* Main Content */}
