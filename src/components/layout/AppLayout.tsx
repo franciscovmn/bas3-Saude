@@ -21,8 +21,17 @@ export function AppLayout({ children }: AppLayoutProps) {
           <AppSidebar />
         </div>
 
-        {/* Mobile Sidebar */}
+        {/* Mobile Sidebar with Sheet */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden fixed top-3 left-3 z-50 shrink-0"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64 sm:w-72">
             <AppSidebar onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
@@ -30,14 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
-          <header className="md:hidden flex items-center gap-2 p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-10">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-            </Sheet>
+          <header className="md:hidden flex items-center justify-center gap-2 p-3 sm:p-4 pl-14 border-b border-border bg-background sticky top-0 z-40">
             <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
           </header>
 
