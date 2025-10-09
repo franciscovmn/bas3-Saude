@@ -172,39 +172,39 @@ export default function Configuracoes() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Configurações</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Configure as regras do seu consultório
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="disponibilidade" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="disponibilidade">Disponibilidade</TabsTrigger>
-          <TabsTrigger value="bloqueios">Bloqueios</TabsTrigger>
-          <TabsTrigger value="planos">Planos</TabsTrigger>
-          <TabsTrigger value="categorias">Categorias</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsTrigger value="disponibilidade" className="text-xs md:text-sm">Disponibilidade</TabsTrigger>
+          <TabsTrigger value="bloqueios" className="text-xs md:text-sm">Bloqueios</TabsTrigger>
+          <TabsTrigger value="planos" className="text-xs md:text-sm">Planos</TabsTrigger>
+          <TabsTrigger value="categorias" className="text-xs md:text-sm">Categorias</TabsTrigger>
         </TabsList>
 
         {/* Aba Disponibilidade */}
         <TabsContent value="disponibilidade" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Clock className="h-4 w-4 md:h-5 md:w-5" />
                 Horários de Trabalho
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs md:text-sm">
                 Defina seus horários de atendimento para cada dia da semana
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               <div className="space-y-4">
-                <Button onClick={() => { setDispEdit(null); setModalDispOpen(true); }}>
+                <Button onClick={() => { setDispEdit(null); setModalDispOpen(true); }} className="w-full md:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Horário
                 </Button>

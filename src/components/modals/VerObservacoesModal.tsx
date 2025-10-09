@@ -20,9 +20,9 @@ export function VerObservacoesModal({
 }: VerObservacoesModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Observações - {pacienteNome}</DialogTitle>
+          <DialogTitle className="text-base md:text-lg">Observações - {pacienteNome}</DialogTitle>
         </DialogHeader>
         
         <div className="py-4 max-h-[60vh] overflow-y-auto">

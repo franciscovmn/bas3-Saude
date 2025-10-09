@@ -220,9 +220,9 @@ export function EfetivarConsultaModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Efetivar Consulta</DialogTitle>
+          <DialogTitle className="text-base md:text-lg">Efetivar Consulta</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

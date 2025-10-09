@@ -142,21 +142,21 @@ export function NovaConsultaModal({ open, onOpenChange }: NovaConsultaModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Consulta</DialogTitle>
+          <DialogTitle className="text-base md:text-lg">Nova Consulta</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="paciente">Paciente *</Label>
+            <Label htmlFor="paciente" className="text-xs md:text-sm">Paciente *</Label>
             <Select value={pacienteId} onValueChange={setPacienteId}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs md:text-sm">
                 <SelectValue placeholder="Selecione um paciente" />
               </SelectTrigger>
               <SelectContent>
                 {pacientes?.map((paciente) => (
-                  <SelectItem key={paciente.id} value={paciente.id.toString()}>
+                  <SelectItem key={paciente.id} value={paciente.id.toString()} className="text-xs md:text-sm">
                     {paciente.nome}
                   </SelectItem>
                 ))}
@@ -164,56 +164,60 @@ export function NovaConsultaModal({ open, onOpenChange }: NovaConsultaModalProps
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <div className="space-y-2">
-              <Label htmlFor="data">Data *</Label>
+              <Label htmlFor="data" className="text-xs md:text-sm">Data *</Label>
               <Input
                 id="data"
                 type="date"
                 value={dataAgendamento}
                 onChange={(e) => setDataAgendamento(e.target.value)}
                 required
+                className="text-xs md:text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hora">Hora *</Label>
+              <Label htmlFor="hora" className="text-xs md:text-sm">Hora *</Label>
               <Input
                 id="hora"
                 type="time"
                 value={horaAgendamento}
                 onChange={(e) => setHoraAgendamento(e.target.value)}
                 required
+                className="text-xs md:text-sm"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tipo">Tipo de Consulta</Label>
+            <Label htmlFor="tipo" className="text-xs md:text-sm">Tipo de Consulta</Label>
             <Input
               id="tipo"
               value={tipoConsulta}
               onChange={(e) => setTipoConsulta(e.target.value)}
               placeholder="Ex: Avaliação, Retorno, etc."
+              className="text-xs md:text-sm"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objetivo">Objetivo da Consulta</Label>
+            <Label htmlFor="objetivo" className="text-xs md:text-sm">Objetivo da Consulta</Label>
             <Textarea
               id="objetivo"
               value={objetivoConsulta}
               onChange={(e) => setObjetivoConsulta(e.target.value)}
               placeholder="Descreva o objetivo da consulta..."
               rows={3}
+              className="text-xs md:text-sm"
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto text-xs md:text-sm">
               Cancelar
             </Button>
-            <Button type="submit" disabled={criarConsultaMutation.isPending}>
+            <Button type="submit" disabled={criarConsultaMutation.isPending} className="w-full sm:w-auto text-xs md:text-sm">
               {criarConsultaMutation.isPending ? "Salvando..." : "Agendar"}
             </Button>
           </DialogFooter>

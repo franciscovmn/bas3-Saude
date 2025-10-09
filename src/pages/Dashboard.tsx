@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DollarSign,
   TrendingUp,
@@ -35,7 +36,7 @@ export default function Dashboard() {
   const fimMes = endOfMonth(hoje);
 
   // Transações do mês atual
-  const { data: transactions } = useQuery({
+  const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
     queryKey: ["transactions", user?.id, inicioMes, fimMes],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,7 +54,7 @@ export default function Dashboard() {
   });
 
   // Consultas filtradas por período
-  const { data: consultasFiltradas } = useQuery({
+  const { data: consultasFiltradas, isLoading: isLoadingConsultas } = useQuery({
     queryKey: ["consultas-periodo", periodoFiltro, user?.id],
     queryFn: async () => {
       let inicio, fim;
@@ -162,48 +163,56 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 md:gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setValoresVisiveis(!valoresVisiveis)}
-              className="h-8 w-8"
+              className="h-7 w-7 md:h-8 md:w-8 shrink-0"
             >
               {valoresVisiveis ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
             </Button>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             Bem-vindo ao seu painel de gestão
           </p>
         </div>
       </div>
 
       {/* KPIs Financeiros */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <KPICard
-          title="Receitas"
-          value={valoresVisiveis ? `R$ ${totalReceitas.toFixed(2)}` : "R$ --,--"}
-          icon={DollarSign}
-        />
-        <KPICard
-          title="Despesas"
-          value={valoresVisiveis ? `R$ ${totalDespesas.toFixed(2)}` : "R$ --,--"}
-          icon={TrendingUp}
-        />
-        <KPICard
-          title="Saldo"
-          value={valoresVisiveis ? `R$ ${saldo.toFixed(2)}` : "R$ --,--"}
-          icon={DollarSign}
-          variant={saldo >= 0 ? "success" : "destructive"}
-        />
-      </div>
+      {isLoadingTransactions ? (
+        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+        </div>
+      ) : (
+        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <KPICard
+            title="Receitas"
+            value={valoresVisiveis ? `R$ ${totalReceitas.toFixed(2)}` : "R$ --,--"}
+            icon={DollarSign}
+          />
+          <KPICard
+            title="Despesas"
+            value={valoresVisiveis ? `R$ ${totalDespesas.toFixed(2)}` : "R$ --,--"}
+            icon={TrendingUp}
+          />
+          <KPICard
+            title="Saldo"
+            value={valoresVisiveis ? `R$ ${saldo.toFixed(2)}` : "R$ --,--"}
+            icon={DollarSign}
+            variant={saldo >= 0 ? "success" : "destructive"}
+          />
+        </div>
+      )}
 
       {/* Resumo do Mês */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <KPICard
           title="Pacientes Ativos"
           value={(pacientesAtivos?.length || 0).toString()}
@@ -223,17 +232,18 @@ export default function Dashboard() {
 
       {/* Consultas por Período */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Clock className="h-4 w-4 md:h-5 md:w-5" />
               Consultas
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
               <Button
                 variant={periodoFiltro === "hoje" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setPeriodoFiltro("hoje")}
+                className="shrink-0"
               >
                 Hoje
               </Button>
@@ -241,6 +251,7 @@ export default function Dashboard() {
                 variant={periodoFiltro === "semana" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setPeriodoFiltro("semana")}
+                className="shrink-0"
               >
                 Esta Semana
               </Button>
@@ -248,21 +259,29 @@ export default function Dashboard() {
                 variant={periodoFiltro === "mes" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setPeriodoFiltro("mes")}
+                className="shrink-0"
               >
                 Este Mês
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {consultasFiltradas && consultasFiltradas.length > 0 ? (
+        <CardContent className="p-4 md:p-6">
+          {isLoadingConsultas ? (
+            <div className="space-y-3">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : (
+          consultasFiltradas && consultasFiltradas.length > 0 ? (
             <div className="space-y-3">
               {consultasFiltradas.map((consulta) => {
                 const isConcluida = consulta.status === "concluída";
                 return (
                   <div
                     key={consulta.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border transition-colors ${
                       isConcluida ? "opacity-60 bg-muted/30" : "hover:bg-muted/50"
                     }`}
                   >
@@ -277,17 +296,17 @@ export default function Dashboard() {
                       className="flex-1 text-left"
                     >
                       <div>
-                        <p className="font-medium text-primary">
+                        <p className="font-medium text-sm md:text-base text-primary">
                           {consulta.pacientes?.nome}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs md:text-sm text-muted-foreground">
                           {format(parseISO(consulta.data_agendamento), "dd/MM/yyyy HH:mm")}
                           {consulta.tipo_consulta && ` - ${consulta.tipo_consulta}`}
                         </p>
                       </div>
                     </button>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getStatusBadge(consulta.status || "pendente")}>
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <Badge variant={getStatusBadge(consulta.status || "pendente")} className="text-xs">
                         {consulta.status}
                       </Badge>
                       {isConcluida && (
@@ -299,8 +318,9 @@ export default function Dashboard() {
                             setModalEditarObsOpen(true);
                           }}
                           title="Editar observações"
+                          className="h-8 w-8"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
                       )}
                     </div>
@@ -309,9 +329,10 @@ export default function Dashboard() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
+            <p className="text-xs md:text-sm text-muted-foreground text-center py-8">
               Nenhuma consulta encontrada neste período
             </p>
+          )
           )}
         </CardContent>
       </Card>
