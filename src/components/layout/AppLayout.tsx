@@ -39,8 +39,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
-          <header className="md:hidden flex items-center justify-center gap-2 p-3 sm:p-4 pl-14 border-b border-border bg-background sticky top-0 z-40">
-            <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
+          <header className="md:hidden relative flex items-center p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-40">
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
+            </div>
           </header>
 
           {/* Main Content */}
