@@ -65,7 +65,7 @@ export function NovoPacienteModal({ open, onOpenChange }: NovoPacienteModalProps
         status: "paciente novo",
       };
 
-      if (formData.plano_fidelizacao_id) {
+      if (formData.plano_fidelizacao_id && formData.plano_fidelizacao_id !== "none") {
         pacienteData.plano_fidelizacao_id = parseInt(formData.plano_fidelizacao_id);
         pacienteData.status = "com vinculo";
       }
@@ -169,7 +169,7 @@ export function NovoPacienteModal({ open, onOpenChange }: NovoPacienteModalProps
                 <SelectValue placeholder="Selecione um plano" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {planos?.map((plano) => (
                   <SelectItem key={plano.id} value={plano.id.toString()}>
                     {plano.nome_plano}
