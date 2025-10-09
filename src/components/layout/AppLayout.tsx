@@ -33,7 +33,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64 sm:w-72">
-            <AppSidebar onNavigate={() => setMobileOpen(false)} />
+            <AppSidebar isMobile onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>
 
