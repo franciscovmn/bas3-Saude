@@ -48,6 +48,18 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
           </header>
 
+          {/* Desktop Header */}
+          <header className="hidden md:flex items-center justify-between p-3 sm:p-4 border-b border-border bg-background sticky top-0 z-40">
+            <div className="flex-1">
+              <span className="text-sm font-medium text-muted-foreground">
+                Sistema de Gestão Nutricional
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MensagemForaEscopoNotification />
+            </div>
+          </header>
+
           {/* Main Content */}
           <main className="flex-1 overflow-auto">
             {children}
