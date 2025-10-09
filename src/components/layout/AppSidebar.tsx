@@ -6,10 +6,10 @@ import {
   DollarSign,
   FileText,
   Settings,
-  Activity,
   LogOut,
   Bot,
 } from "lucide-react";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 import {
   Sidebar,
   SidebarContent,
@@ -46,9 +46,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps = {}) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
-          <Activity className="h-6 w-6 text-sidebar-primary" />
-          <span className="font-bold text-lg text-sidebar-foreground">ClinicFlow</span>
+        <div className="flex items-center justify-center">
+          <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-8 w-auto" />
         </div>
       </SidebarHeader>
       <SidebarContent>

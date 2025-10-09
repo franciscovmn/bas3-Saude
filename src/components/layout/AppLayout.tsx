@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AppSidebar } from "./AppSidebar";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -37,7 +38,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </Button>
               </SheetTrigger>
             </Sheet>
-            <h1 className="font-bold text-base sm:text-lg">ClinicFlow</h1>
+            <img src={logoHorizontal} alt="UPCIGN Sistemas" className="h-6 w-auto" />
           </header>
 
           {/* Main Content */}

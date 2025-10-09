@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import logoVertical from "@/assets/logo-vertical.png";
 
 export default function Auth() {
   const { signIn, signUp } = useAuth();
@@ -38,10 +39,12 @@ export default function Auth() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
       <Card className="w-full max-w-md mx-4">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">ClinicFlow</CardTitle>
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <img src={logoVertical} alt="UPCIGN Sistemas" className="h-24 w-auto" />
+          </div>
           <CardDescription className="text-center">
-            Gestão completa do seu consultório
+            Sistema de Gestão para Profissionais de Saúde
           </CardDescription>
         </CardHeader>
         <CardContent>
