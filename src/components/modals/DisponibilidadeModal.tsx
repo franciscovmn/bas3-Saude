@@ -84,8 +84,10 @@ export function DisponibilidadeModal({ open, onOpenChange, disponibilidade }: Di
     },
     onSuccess: () => {
       toast.success(`Horário ${isEdit ? "atualizado" : "adicionado"} com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ["disponibilidade"] });
       onOpenChange(false);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["disponibilidade"] });
     },
     onError: (error) => {
       console.error("Erro ao salvar disponibilidade:", error);

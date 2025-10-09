@@ -76,9 +76,11 @@ export function NovoPacienteModal({ open, onOpenChange }: NovoPacienteModalProps
     },
     onSuccess: () => {
       toast.success("Paciente cadastrado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["pacientes"] });
       onOpenChange(false);
       setFormData({ nome: "", telefone: "", email: "", restricoes: "", objetivo: "", plano_fidelizacao_id: "" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["pacientes"] });
     },
     onError: (error) => {
       console.error("Erro ao criar paciente:", error);

@@ -188,14 +188,16 @@ export function EfetivarConsultaModal({
     },
     onSuccess: () => {
       toast.success("Consulta efetivada com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["consultas-mes"] });
-      queryClient.invalidateQueries({ queryKey: ["paciente"] });
-      queryClient.invalidateQueries({ queryKey: ["pacientes"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       onOpenChange(false);
       setObservacoes("");
       setPlanoSelecionado("");
       setAgendarRetorno(false);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["consultas-mes"] });
+      queryClient.invalidateQueries({ queryKey: ["paciente"] });
+      queryClient.invalidateQueries({ queryKey: ["pacientes"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
     onError: (error) => {
       console.error("Erro ao efetivar consulta:", error);

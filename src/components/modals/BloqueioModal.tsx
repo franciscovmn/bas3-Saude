@@ -74,9 +74,11 @@ export function BloqueioModal({ open, onOpenChange, bloqueio }: BloqueioModalPro
     },
     onSuccess: () => {
       toast.success(`Bloqueio ${isEdit ? "atualizado" : "criado"} com sucesso!`);
+      onOpenChange(false);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["bloqueios"] });
       queryClient.invalidateQueries({ queryKey: ["bloqueios-config"] });
-      onOpenChange(false);
     },
     onError: (error) => {
       console.error("Erro ao salvar bloqueio:", error);

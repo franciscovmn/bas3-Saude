@@ -59,9 +59,11 @@ export function EditarPacienteModal({ open, onOpenChange, paciente }: EditarPaci
     },
     onSuccess: () => {
       toast.success("Paciente atualizado com sucesso!");
+      onOpenChange(false);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["paciente"] });
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
-      onOpenChange(false);
     },
     onError: (error) => {
       console.error("Erro ao editar paciente:", error);

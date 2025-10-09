@@ -66,9 +66,11 @@ export function NovaTransacaoModal({ open, onOpenChange, tipo }: NovaTransacaoMo
     },
     onSuccess: () => {
       toast.success(`${tipo === "receita" ? "Receita" : "Despesa"} adicionada com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       onOpenChange(false);
       setFormData({ descricao: "", valor: "", categoria: "", data: new Date().toISOString().split("T")[0] });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
     onError: (error) => {
       console.error("Erro ao criar transação:", error);

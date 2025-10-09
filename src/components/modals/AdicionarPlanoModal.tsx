@@ -83,10 +83,12 @@ export function AdicionarPlanoModal({
     },
     onSuccess: () => {
       toast.success("Plano adicionado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["paciente"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       onOpenChange(false);
       setPlanoSelecionado("");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["paciente"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
     onError: (error) => {
       console.error("Erro ao adicionar plano:", error);

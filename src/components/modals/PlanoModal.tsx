@@ -86,8 +86,10 @@ export function PlanoModal({ open, onOpenChange, plano }: PlanoModalProps) {
     },
     onSuccess: () => {
       toast.success(`Plano ${isEdit ? "atualizado" : "criado"} com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ["planos"] });
       onOpenChange(false);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["planos"] });
     },
     onError: (error) => {
       console.error("Erro ao salvar plano:", error);

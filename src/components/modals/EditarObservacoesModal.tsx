@@ -44,8 +44,10 @@ export function EditarObservacoesModal({
     },
     onSuccess: () => {
       toast.success("Observações atualizadas com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["consultas-mes"] });
       onOpenChange(false);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["consultas-mes"] });
     },
     onError: (error) => {
       console.error("Erro ao atualizar observações:", error);

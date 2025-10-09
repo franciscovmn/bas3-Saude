@@ -117,13 +117,15 @@ export function NovaConsultaModal({ open, onOpenChange }: NovaConsultaModalProps
     },
     onSuccess: () => {
       toast.success("Consulta agendada com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["consultas-mes"] });
       onOpenChange(false);
       setPacienteId("");
       setDataAgendamento("");
       setHoraAgendamento("");
       setObjetivoConsulta("");
       setTipoConsulta("");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["consultas-mes"] });
     },
     onError: (error) => {
       console.error("Erro ao agendar consulta:", error);

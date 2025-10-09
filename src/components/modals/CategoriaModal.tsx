@@ -32,9 +32,11 @@ export function CategoriaModal({ open, onOpenChange }: CategoriaModalProps) {
     },
     onSuccess: () => {
       toast.success("Categoria criada com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["categorias"] });
       onOpenChange(false);
       setNomeCategoria("");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
     },
     onError: (error) => {
       console.error("Erro ao criar categoria:", error);
