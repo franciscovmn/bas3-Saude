@@ -1,11 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   DollarSign,
   TrendingUp,
@@ -16,12 +13,31 @@ import {
   EyeOff,
   Edit2,
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format, parseISO } from "date-fns";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { EfetivarConsultaModal } from "@/components/modals/EfetivarConsultaModal";
 import { EditarObservacoesModal } from "@/components/modals/EditarObservacoesModal";
+
+// Dados estáticos de demonstração
+const MOCK_TRANSACTIONS = [
+  { id: "1", tipo_transacao: "receita", valor: 350, data: "2025-12-01", descricao: "Consulta - Maria Silva" },
+  { id: "2", tipo_transacao: "receita", valor: 350, data: "2025-12-01", descricao: "Consulta - João Santos" },
+  { id: "3", tipo_transacao: "despesa", valor: 150, data: "2025-12-02", descricao: "Material de escritório" },
+  { id: "4", tipo_transacao: "receita", valor: 500, data: "2025-12-02", descricao: "Plano mensal - Ana Costa" },
+];
+
+const MOCK_CONSULTAS = [
+  { id: "1", pacientes: { nome: "Maria Silva" }, data_agendamento: "2025-12-02T09:00:00", tipo_consulta: "Primeira consulta", status: "pendente" },
+  { id: "2", pacientes: { nome: "João Santos" }, data_agendamento: "2025-12-02T10:30:00", tipo_consulta: "Retorno", status: "confirmada" },
+  { id: "3", pacientes: { nome: "Ana Costa" }, data_agendamento: "2025-12-02T14:00:00", tipo_consulta: "Acompanhamento", status: "pendente" },
+  { id: "4", pacientes: { nome: "Carlos Ferreira" }, data_agendamento: "2025-12-01T11:00:00", tipo_consulta: "Retorno", status: "concluída" },
+];
+
+const MOCK_STATS = {
+  pacientesAtivos: 12,
+  consultasRealizadas: 28,
+  novosPacientes: 5,
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -30,127 +46,20 @@ export default function Dashboard() {
   const [modalEfetivarOpen, setModalEfetivarOpen] = useState(false);
   const [modalEditarObsOpen, setModalEditarObsOpen] = useState(false);
   const [periodoFiltro, setPeriodoFiltro] = useState<"hoje" | "semana" | "mes">("hoje");
-  
-  const hoje = new Date();
-  const inicioMes = startOfMonth(hoje);
-  const fimMes = endOfMonth(hoje);
 
-  // Transações do mês atual
-  const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["transactions", user?.id, inicioMes, fimMes],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fluxo_de_caixa")
-        .select("*")
-        .eq("user_id", user?.id)
-        .gte("data", inicioMes.toISOString())
-        .lte("data", fimMes.toISOString())
-        .order("data", { ascending: false });
+  // Cálculos com dados estáticos
+  const totalReceitas = MOCK_TRANSACTIONS
+    .filter((t) => t.tipo_transacao === "receita")
+    .reduce((acc, t) => acc + Number(t.valor), 0);
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // Consultas filtradas por período
-  const { data: consultasFiltradas, isLoading: isLoadingConsultas } = useQuery({
-    queryKey: ["consultas-periodo", periodoFiltro, user?.id],
-    queryFn: async () => {
-      let inicio, fim;
-      
-      if (periodoFiltro === "hoje") {
-        inicio = startOfDay(hoje);
-        fim = endOfDay(hoje);
-      } else if (periodoFiltro === "semana") {
-        inicio = startOfWeek(hoje, { locale: ptBR });
-        fim = endOfWeek(hoje, { locale: ptBR });
-      } else {
-        inicio = inicioMes;
-        fim = fimMes;
-      }
-      
-      const { data, error } = await supabase
-        .from("consultas")
-        .select(`
-          *,
-          pacientes (nome)
-        `)
-        .eq("user_id", user?.id)
-        .gte("data_agendamento", inicio.toISOString())
-        .lte("data_agendamento", fim.toISOString())
-        .order("data_agendamento");
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // Pacientes ativos (com vínculo)
-  const { data: pacientesAtivos } = useQuery({
-    queryKey: ["pacientes-ativos", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pacientes")
-        .select("id")
-        .eq("user_id", user?.id)
-        .eq("status", "com vinculo");
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // Consultas realizadas no mês
-  const { data: consultasRealizadas } = useQuery({
-    queryKey: ["consultas-realizadas", user?.id, inicioMes, fimMes],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("consultas")
-        .select("id")
-        .eq("user_id", user?.id)
-        .eq("status", "concluída")
-        .gte("data_agendamento", inicioMes.toISOString())
-        .lte("data_agendamento", fimMes.toISOString());
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // Novos pacientes atendidos no mês (primeira consulta concluída)
-  const { data: novosPacientes } = useQuery({
-    queryKey: ["novos-pacientes", user?.id, inicioMes, fimMes],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("consultas")
-        .select("paciente_id")
-        .eq("user_id", user?.id)
-        .eq("status", "concluída")
-        .gte("data_agendamento", inicioMes.toISOString())
-        .lte("data_agendamento", fimMes.toISOString());
-
-      if (error) throw error;
-      
-      // Contar pacientes únicos
-      const pacientesUnicos = new Set(data.map(c => c.paciente_id));
-      return pacientesUnicos.size;
-    },
-    enabled: !!user?.id,
-  });
-
-  const totalReceitas = transactions
-    ?.filter((t) => t.tipo_transacao === "receita")
-    .reduce((acc, t) => acc + Number(t.valor), 0) || 0;
-
-  const totalDespesas = transactions
-    ?.filter((t) => t.tipo_transacao === "despesa")
-    .reduce((acc, t) => acc + Number(t.valor), 0) || 0;
+  const totalDespesas = MOCK_TRANSACTIONS
+    .filter((t) => t.tipo_transacao === "despesa")
+    .reduce((acc, t) => acc + Number(t.valor), 0);
 
   const saldo = totalReceitas - totalDespesas;
+
+  // Filtrar consultas baseado no período (simplificado para demo)
+  const consultasFiltradas = MOCK_CONSULTAS;
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -178,54 +87,46 @@ export default function Dashboard() {
             </Button>
           </div>
           <p className="text-sm md:text-base text-muted-foreground">
-            Bem-vindo ao seu painel de gestão
+            Bem-vindo, {user?.user_metadata?.full_name || "Administrador"}
           </p>
         </div>
       </div>
 
       {/* KPIs Financeiros */}
-      {isLoadingTransactions ? (
-        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-        </div>
-      ) : (
-        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <KPICard
-            title="Receitas"
-            value={valoresVisiveis ? `R$ ${totalReceitas.toFixed(2)}` : "R$ --,--"}
-            icon={DollarSign}
-          />
-          <KPICard
-            title="Despesas"
-            value={valoresVisiveis ? `R$ ${totalDespesas.toFixed(2)}` : "R$ --,--"}
-            icon={TrendingUp}
-          />
-          <KPICard
-            title="Saldo"
-            value={valoresVisiveis ? `R$ ${saldo.toFixed(2)}` : "R$ --,--"}
-            icon={DollarSign}
-            variant={saldo >= 0 ? "success" : "destructive"}
-          />
-        </div>
-      )}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <KPICard
+          title="Receitas"
+          value={valoresVisiveis ? `R$ ${totalReceitas.toFixed(2)}` : "R$ --,--"}
+          icon={DollarSign}
+        />
+        <KPICard
+          title="Despesas"
+          value={valoresVisiveis ? `R$ ${totalDespesas.toFixed(2)}` : "R$ --,--"}
+          icon={TrendingUp}
+        />
+        <KPICard
+          title="Saldo"
+          value={valoresVisiveis ? `R$ ${saldo.toFixed(2)}` : "R$ --,--"}
+          icon={DollarSign}
+          variant={saldo >= 0 ? "success" : "destructive"}
+        />
+      </div>
 
       {/* Resumo do Mês */}
       <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <KPICard
           title="Pacientes Ativos"
-          value={(pacientesAtivos?.length || 0).toString()}
+          value={MOCK_STATS.pacientesAtivos.toString()}
           icon={Users}
         />
         <KPICard
           title="Consultas Realizadas"
-          value={(consultasRealizadas?.length || 0).toString()}
+          value={MOCK_STATS.consultasRealizadas.toString()}
           icon={Calendar}
         />
         <KPICard
           title="Novos Pacientes"
-          value={(novosPacientes || 0).toString()}
+          value={MOCK_STATS.novosPacientes.toString()}
           icon={Users}
         />
       </div>
@@ -267,14 +168,7 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent className="p-4 md:p-6">
-          {isLoadingConsultas ? (
-            <div className="space-y-3">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-            </div>
-          ) : (
-          consultasFiltradas && consultasFiltradas.length > 0 ? (
+          {consultasFiltradas && consultasFiltradas.length > 0 ? (
             <div className="space-y-3">
               {consultasFiltradas.map((consulta) => {
                 const isConcluida = consulta.status === "concluída";
@@ -332,7 +226,6 @@ export default function Dashboard() {
             <p className="text-xs md:text-sm text-muted-foreground text-center py-8">
               Nenhuma consulta encontrada neste período
             </p>
-          )
           )}
         </CardContent>
       </Card>
