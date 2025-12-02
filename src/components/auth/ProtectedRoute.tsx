@@ -1,8 +1,10 @@
-import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+// Remova a importação do Navigate se não for usar mais
+// import { Navigate } from "react-router-dom"; 
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  // Você pode remover o 'user' da desestruturação se não for usar
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -12,9 +14,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  // COMENTE OU REMOVA ESTE BLOCO DE CÓDIGO
+  /* if (!user) {
     return <Navigate to="/auth" replace />;
   }
+  */
 
+  // Retorna os filhos (a página solicitada) diretamente
   return <>{children}</>;
 }
