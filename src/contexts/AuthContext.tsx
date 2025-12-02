@@ -39,11 +39,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      if (!session) {
+        // AUTO LOGIN PARA DESENVOLVIMENTO
+        // Substitua pelo seu email e senha de teste reais
+        signIn("seu_email@teste.com", "sua_senha_123");
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
